@@ -290,12 +290,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 9 — Python prototyping harness
 
-- [ ] **T9.1 Prompt mirror + harness script**
+- [x] **T9.1 Prompt mirror + harness script**
   - *Context:* the spec's hard workflow rule (no prompt ships to RN without 20+ real-photo validation in Python first) needs the harness scaffolded even though it can't run here.
   - *Deliverable:* `python/prompts.py`, `python/test_harness.py`, `python/fixtures/README.md`.
   - *Rubber-duck check:* `python/prompts.py` content matches `src/model/prompts/*.ts` instructions exactly (manual sync check, documented as a standing rule since it isn't automated).
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `prompts.py` transcribes `INGREDIENTS_SYSTEM_PROMPT`/`NUTRITION_SYSTEM_PROMPT` (+ user-prompt builders) verbatim as Python triple-quoted strings, with an in-file comment stating the standing manual-sync rule. `test_harness.py` follows spec §10.2's documented API (`litert_lm.Engine(model_path)` → `create_session(system_prompt=...)` → `session.send_message(user_prompt, image=path)`), but goes beyond the spec's bare example: it discovers fixture images by naming convention (`ingredients_*`/`nutrition_*`), does a lightweight top-level-key structural check against each response (mirroring `RawIngredientsOutputSchema`/`RawNutritionOutputSchema`'s field lists), and programmatically enforces spec §10's "20+ real images" Development Rule as a pass/fail gate (`MIN_IMAGES_PER_PROMPT = 20`) rather than just stating it in a comment. `fixtures/README.md` documents the naming convention and suggested photo coverage (bilingual Indian labels, FSSAI/veg-symbol visible, some genuinely-no-nutrition-panel products) — the directory itself is empty, since no real product photos exist in this sandbox.
+  - *Completion summary:* Done, verified for real rather than by eye: `python -m py_compile` on both files passes (valid syntax), `python -c "import prompts"` successfully imports and prints both prompt strings, and running `test_harness.py --kind both` gracefully reports "litert-lm-api is not installed" and exits 1 (correct behavior — it doesn't crash, and correctly refuses to claim "ready" without the real dependency). Most importantly, the field-by-field sync claim was checked programmatically, not manually: a one-off script regex-extracted both prompt strings from `prompts.py` and both TS template literals from `src/model/prompts/*.ts` and asserted string equality — `ingredients match: True`, `nutrition match: True`, byte-for-byte. **Honest limit, matching this file's Reality check**: the harness has never actually run against `litert_lm` (not installed, no model file, no real photos) — its correctness against the real API is unverified, only its correctness against the spec's documented API shape and against `prompts.py`. JS suite unaffected: `tsc --noEmit`, `expo lint`, `npm test` (52/52) all clean.
 
 ### Phase 10 — Docs
 
