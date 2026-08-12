@@ -281,12 +281,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 8 — Persistence
 
-- [ ] **T8.1 SQLite history write-path**
+- [x] **T8.1 SQLite history write-path**
   - *Context:* scans shouldn't be lost even though the History *screen* is a follow-up pass.
   - *Deliverable:* `src/db/history.ts`.
   - *Rubber-duck check:* write then read back a `ScanResult` and confirm round-trip fidelity — no field lost across the JSON-blob/indexed-column split.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `scan_history` table: `scannedAt`/`productLabel`/`overall` are indexed convenience columns for future list/sort queries (the not-yet-built History screen), `scanResultJson` is the full `JSON.stringify(result)` blob and the *only* thing `deserializeScanResult` reads — the convenience columns are write-only from the read side, so they structurally cannot cause field loss on read. `serializeScanResult`/`deserializeScanResult` are pure functions, separated from the async `insertScan`/`getScanById`/`getAllScans` DB calls specifically so round-trip fidelity is testable without a native SQLite bridge.
+  - *Completion summary:* Done. `history.test.ts` has two layers: a pure round-trip test against `serializeScanResult`/`deserializeScanResult` directly, run twice — once with every `ScanResult` field populated (nested ingredients array, full nutrition/balance objects, micronutrients array) and once with every optional field null/empty — both assert deep equality against the original object, not a spot-check of a few fields. Then an integration layer mocks `expo-sqlite` (no native bridge in this sandbox) with a real in-memory array standing in for the table, so `insertScan`→`getScanById`/`getAllScans` exercises the actual SQL-shaped code path end to end, including a not-found case and a multi-row `getAllScans`. 5 new tests, 52/52 total pass. `tsc --noEmit` and `expo lint` clean (hit the same `jest.mock` factory-hoisting restriction as T2.2/T6.1 — a `interface` declared *inside* the factory still tripped it, apparently because babel's hoist-checker doesn't distinguish type-only identifiers; fixed by inlining the type instead of naming it).
 
 ### Phase 9 — Python prototyping harness
 
