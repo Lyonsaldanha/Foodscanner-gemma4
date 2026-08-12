@@ -232,12 +232,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 6 — Processing & orchestration
 
-- [ ] **T6.1 Preprocessing**
+- [x] **T6.1 Preprocessing**
   - *Context:* spec requires 896×896 resize + [-1,1] normalization before inference; wrong preprocessing silently degrades model accuracy.
   - *Deliverable:* `src/camera/preprocess.ts` (via `expo-image-manipulator`).
   - *Rubber-duck check:* output dimensions/format match spec §6.2 exactly.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `preprocessImage(uri)` resizes to `MODEL_INPUT_SIZE` (896×896, exported as a named constant) via `ImageManipulator.manipulate(uri).resize(...).renderAsync()`, saves as JPEG, and maps the result to `PreprocessedImage` (`{uri, width, height}`, T4.1's seam type). Deliberately scoped down from spec §6.2's literal wording: the spec also calls for normalizing pixel values to [-1,1] "in JavaScript", but `expo-image-manipulator` only exposes file-level operations (resize/crop/rotate/save) — there's no raw-pixel-buffer API in this project's dependencies to do that math in JS, and the real `model.sendMessage(text, {image})` call (spec §11.2) takes an image reference, not a pre-normalized float tensor. Documented in-code as a stated gap (native-side responsibility, unverifiable without a real react-native-litert-lm bridge) rather than silently doing something different from what was asked.
+  - *Completion summary:* Done for the part that's actually buildable in JS this pass: dimensions (896×896) and format (JPEG) match spec §6.2 exactly. `expo-image-manipulator` has no `jest-expo` mock and needs a real native bridge unavailable in this sandbox, so `preprocess.test.ts` mocks the module (using `mock`-prefixed variable names, required for Jest's factory-hoisting rules) to verify the *orchestration* — `manipulate` called with the input URI, `resize` called with exactly `{width:896, height:896}`, `saveAsync` called with JPEG format, and the result correctly mapped to `PreprocessedImage`. This proves the wiring is correct, not that real image manipulation produces a correct pixel result — that's the same "no real device" gap already documented in this file's Reality check. `tsc --noEmit`, `expo lint`, and `npm test` (43/43) all clean.
 
 - [ ] **T6.2 runScan orchestrator**
   - *Context:* the single place that must correctly branch on which photo(s) were captured and merge results without one panel's absence corrupting the other's data.
