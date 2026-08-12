@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/91976/STUDY/FoodScanner/.claude/hooks/commit-on-task-complete.js\"",
+            "timeout": 30,
+            "statusMessage": "Checkpointing completed task to git..."
+          }
+        ]
+      }
+    ]
+  }
+}
