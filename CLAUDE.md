@@ -8,10 +8,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This repository currently contains **specification documents only** — there is no source code, `package.json`, or build tooling yet:
+An Expo + TypeScript app (expo-router, strict TS), with most of the MVP build plan complete — see [plan.md](plan.md) for the full per-task record and [architecture.md](architecture.md) for the module boundary, ADRs, and what's deliberately not built yet (a real on-device model client chief among them — everything is built and tested against a mock, since no real Android device or `.litertlm` weights exist in this dev environment).
 
-- [ingredient-lens-spec.md](ingredient-lens-spec.md) — full technical/product spec (global)
-- [ingredient-lens-spec-india.md](ingredient-lens-spec-india.md) — India-market-focused variant of the same spec (allergen glossary, FSSAI compliance, dietary practices)
+Commands (run from the repo root):
+
+```bash
+npm run typecheck   # tsc --noEmit
+npm run lint        # expo lint
+npm test            # jest --passWithNoTests
+npm run start        # expo start
+npm run web          # expo start --web
+```
+
+Reference docs:
+- [architecture.md](architecture.md) — module boundary, Architecture Decision Records, the real `ScanResult` schema
+- [ingredient-lens-spec.md](ingredient-lens-spec.md) — full technical/product spec (global); `plan.md` supersedes this wherever it says so
+- [ingredient-lens-spec-india.md](ingredient-lens-spec-india.md) — India-market-focused variant (allergen glossary, FSSAI compliance, dietary practices)
 
 
 ## UI design style: Conceptual Sketch Bento Box
