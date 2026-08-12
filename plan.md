@@ -1,0 +1,320 @@
+# Ingredient Lens — Build Plan (MVP-first)
+
+> **What this file is**: the living build plan for this project, using an atomic-task execution method. It is the source of truth for *why* each piece exists and *what's actually been verified*, not just what's been written. See [CLAUDE.md](CLAUDE.md) for the short pointer/usage note; this file has the full plan and per-task progress.
+>
+> **How to use it**: before starting new work, check the task list below for the next unchecked item and read its Context so you understand *why* it exists, not just what file to touch. When a task is done, fill in its **Result**, **Rubber-duck check**, and **Completion summary** fields directly in this file (don't just mark it done elsewhere) — that record is what lets the next session (human or Claude) trust "done" without re-deriving it from scratch.
+
+## Context
+
+The repo started as planning docs only (`ingredient-lens-spec.md`, `ingredient-lens-spec-india.md`, `CLAUDE.md`, an empty `architecture.md`) — no code existed. The generic spec framed the product as "identify ingredients in a photo," but the real use case, confirmed with the user, is sharper and more useful: **a shopper standing in a grocery aisle deciding between packaged products** (e.g. shortbread biscuits) needs two things fast:
+
+1. **Ingredient decoding** — plain-English meaning for euphemistic/hidden ingredient names (maida → refined flour, invert sugar syrup → added sugar, maltodextrin, hydrogenated oil, etc.), so unfamiliar-sounding terms don't slip past them.
+2. **A nutrition balance verdict** — not just the raw Nutrition Facts numbers, but whether the product is macro-balanced, computed deterministically from cleaned data, with micronutrients treated as optional (packaging often omits them).
+
+This is being built as an "AI-native engineered" product: the LLM (Gemma 4 E2B via LiteRT-LM) is scoped tightly to what only a vision-language model can do (OCR + data cleaning), while everything that can be deterministic — ingredient decoding against a curated glossary, and the nutrition balance verdict against fixed thresholds — is plain, testable TypeScript. This keeps the app's core judgments explainable and unit-testable instead of being opaque LLM output.
+
+Confirmed decisions driving this plan:
+- **Scope**: MVP-first. Camera → Processing → Result is the full, real build target this pass. Onboarding, model-download screen, History screen, and deep India-specific UI (Jain/Iyengar/Sattvic filtering) are designed-for in the schema but not built this pass.
+- **India fields** (`is_vegetarian`, FSSAI license number, dietary-practice flags) are always part of the one universal schema/prompt — no locale gating.
+- **Capture flow**: unguided. One camera screen, a top toggle selecting capture target (Ingredients panel / Nutrition label), shutter stays at the bottom in its normal spot and captures into whichever slot is selected. Either or both can be captured, in any order. A Settings screen holds a "single-photo auto mode" toggle (best-effort, both panels from one photo) — **off by default**.
+- **Ingredient decoding**: bundled offline glossary (deterministic, unit-testable) is the primary source; the model supplies its own best-guess plain meaning for terms not in the glossary, in the *same* inference call (no second round-trip). The app marks each decoded ingredient's `source: "glossary" | "model"` so the two qualities of answer are distinguishable in the UI and independently testable.
+- **Nutrition verdict**: the model's only job on the nutrition photo is OCR + cleaning (normalize units, handle per-100g vs per-serving, null out absent fields). A deterministic rule engine (plain TypeScript, no model call) computes per-nutrient flags and the overall verdict from those cleaned numbers, using published-style per-100g thresholds (UK FSA traffic-light cutoffs) as the documented basis — not a medical claim, an explainable heuristic.
+- **Reality check for this sandbox**: no real Android device, no downloaded `.litertlm` weights, no real product photos are available in the dev environment this was built in. Real on-device inference cannot be run or verified there. Everything is built against the real, documented APIs (`react-native-litert-lm`, `litert-lm-api`) behind a `ModelClient` abstraction, with a mock implementation so all business logic (glossary matching, rule engine, parsing) is fully unit-tested without a device. Real-device verification and the spec's mandated 20+-real-photo validation gate are explicitly manual steps for whoever has the real hardware/photos.
+
+## Architecture
+
+### Schema (supersedes the generic spec's `{ingredients, allergens_detected, language, notes}` shape)
+
+`src/types/scan.ts`:
+```ts
+type IngredientSource = "glossary" | "model";
+
+interface DecodedIngredient {
+  rawName: string;           // as OCR'd off the package
+  plainMeaning: string | null;
+  category: string | null;   // "added_sugar" | "refined_flour" | "trans_fat_source" | "preservative" | "emulsifier" | "artificial_colour" | "natural" | ...
+  source: IngredientSource | null; // null if neither glossary nor model could resolve it
+  isHiddenName: boolean;     // true if plainMeaning materially differs from rawName
+  allergen: boolean;
+  confidence: number;
+}
+
+interface NutritionPer100g {
+  energyKcal: number | null;
+  proteinG: number | null;
+  totalCarbG: number | null;
+  sugarG: number | null;
+  addedSugarG: number | null;
+  fiberG: number | null;
+  totalFatG: number | null;
+  saturatedFatG: number | null;
+  transFatG: number | null;
+  sodiumMg: number | null;
+  micronutrients: { name: string; amount: number; unit: string }[] | null; // often absent
+}
+
+type NutrientFlag = "low" | "medium" | "high";
+
+interface BalanceVerdict {
+  flags: { sugar: NutrientFlag; saturatedFat: NutrientFlag; sodium: NutrientFlag; protein: "low" | "good"; fiber: "low" | "good" };
+  rulesTriggered: string[];   // human-readable, e.g. "High in sugar (18g/100g, >22.5g/100g threshold)"
+  overall: "everyday" | "moderate" | "occasional_treat";
+  summary: string;            // one templated sentence built from the flags
+}
+
+interface ScanResult {
+  scannedAt: string;
+  productLabel: string | null;
+  ingredients: DecodedIngredient[] | null;
+  allergensDetected: string[];
+  isVegetarian: boolean | null;
+  fssaiLicenseNumber: string | null;
+  dietaryFlags: { jain: boolean; iyengar: boolean; sattvic: boolean } | null;
+  language: string | null;
+  nutrition: NutritionPer100g | null;
+  balance: BalanceVerdict | null;
+  notes: string | null;
+}
+```
+
+### Module boundary
+
+```
+Camera screen (capture) → runScan orchestrator
+  ├─ ingredients photo → preprocess → ModelClient (ingredients prompt) → parser (fallback chain) → glossary decoder → DecodedIngredient[]
+  └─ nutrition photo   → preprocess → ModelClient (nutrition prompt)   → parser (fallback chain) → rule engine       → BalanceVerdict
+       → merge into ScanResult → persist (SQLite) → Result screen (bento UI)
+```
+
+`ModelClient` is an interface (`src/model/types.ts`) with one real implementation (`engine.ts`, wraps `react-native-litert-lm`) and one mock (`mockEngine.ts`, canned fixture responses) — everything above the client is testable with the mock, no device needed.
+
+## Execution method: atomic task system
+
+Each task below is independently completable and independently verifiable. Every task carries four parts:
+
+- **Context** — why this task is needed for the product (pre-filled at plan time).
+- **Result** — what was actually produced (filled in on completion).
+- **Rubber-duck check** — re-derive what the task *should* have produced from its Context and requirement, then check the actual Result against that from scratch. Not "it compiles" — "does it actually do the thing." The specific check to run is pre-specified per task.
+- **Completion summary** — one or two sentences, accurate over impressive, stating pass/fail and anything left open.
+
+---
+
+### Phase 0 — Scaffolding & tooling
+
+- [x] **T0.0 In-repo `plan.md` + `CLAUDE.md` pointer**
+  - *Context:* the plan only lived in Claude Code's internal plan storage, outside the git repo — needs to be committed as a real project file so it survives and travels with the repo.
+  - *Deliverable:* this file, plus a pointer section in `CLAUDE.md`.
+  - *Rubber-duck check:* does `CLAUDE.md`'s pointer alone (without the planning conversation) tell a future Claude instance what `plan.md` is and how to keep it updated?
+  - *Result:* Created `plan.md` at repo root with full Context/Architecture/atomic-task-list. Added a "Build plan" section to `CLAUDE.md` (before "Project state") linking to it and explaining the Context/Deliverable/Rubber-duck-check/Result/Completion-summary fields and the update rule.
+  - *Completion summary:* Done. Re-reading only the new `CLAUDE.md` section (no other context) is enough to know `plan.md` exists, what it's for, and that finishing a task means editing its fields in-place — check passes.
+
+- [ ] **T0.1 Expo+TS scaffold**
+  - *Context:* no RN project exists; expo-router matches the spec's file-based screen layout (`app/camera.tsx` etc.) directly.
+  - *Deliverable:* `package.json`, `tsconfig.json` (strict), `babel.config.js`, `app.json`, expo-router entry + placeholder route.
+  - *Rubber-duck check:* `tsc --noEmit` runs clean on the empty skeleton; the placeholder route actually renders.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T0.2 Lint/test tooling**
+  - *Context:* "engineered, not vibe-coded" means typecheck/lint/test are enforced from the first commit, not bolted on later.
+  - *Deliverable:* ESLint config, `jest`+`jest-expo`+`@testing-library/react-native`, `lint`/`typecheck`/`test`/`start` npm scripts.
+  - *Rubber-duck check:* all four scripts run without config errors (even against near-empty source).
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T0.3 Dependencies + .gitignore**
+  - *Context:* `zod` is needed later for real schema validation of model output (not just trusting `JSON.parse`); model files (~2.59GB) must never be committed.
+  - *Deliverable:* deps installed (`expo-router`, `expo-camera`, `expo-sqlite`, `expo-image-manipulator`, `zod`), `.gitignore` updated (`node_modules`, `.expo`, `dist`, `*.litertlm`).
+  - *Rubber-duck check:* `git status` shows none of those paths tracked.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 1 — Types
+
+- [ ] **T1.1 Core schema types**
+  - *Context:* the sharpened schema (decoded ingredients w/ `source`, per-100g nutrition, rule-based verdict) is the contract every other module codes against — get it right once.
+  - *Deliverable:* `src/types/scan.ts`, `src/types/capture.ts`.
+  - *Rubber-duck check:* walk each confirmed decision (capture flow, glossary+model-fallback, deterministic verdict) and confirm every field needed to represent it exists, with no orphan/unused fields.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 2 — Glossary module
+
+- [ ] **T2.1 Glossary seed data**
+  - *Context:* deterministic decoding needs real curated data — this file IS the "maida is refined flour" value proposition.
+  - *Deliverable:* `src/glossary/data.json`, ~25 entries (maida, invert sugar syrup, maltodextrin, HFCS, hydrogenated/palm oil, sodium benzoate, etc.), each with `aliases/plainMeaning/category/healthNote`.
+  - *Rubber-duck check:* no placeholder text in any entry; spot-check 3 entries against public food-labeling knowledge for accuracy.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T2.2 Decoder + tests**
+  - *Context:* OCR text won't exactly match glossary keys (case/plurals/typos) — matching must be robust or the glossary is dead weight.
+  - *Deliverable:* `src/glossary/decoder.ts`, `decoder.test.ts`.
+  - *Rubber-duck check:* confirm the test suite actually exercises exact-match, fuzzy/typo-match, and no-match→`null` separately, not just a happy path.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 3 — Nutrition rule engine
+
+- [ ] **T3.1 Thresholds**
+  - *Context:* the balance verdict must be explainable and reproducible, not invented — needs one documented, citable basis (UK-FSA-style per-100g cutoffs).
+  - *Deliverable:* `src/nutrition/thresholds.ts` with inline rationale.
+  - *Rubber-duck check:* every threshold has a stated source/rationale; units are consistently per-100g throughout.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T3.2 Rule engine + tests**
+  - *Context:* this pure function IS the "is it balanced" answer the product promises — it must be deterministic to be trustworthy.
+  - *Deliverable:* `src/nutrition/ruleEngine.ts`, `ruleEngine.test.ts` (a shortbread-biscuit-shaped high-sugar/high-satfat fixture + a lower-sugar fixture).
+  - *Rubber-duck check:* hand-recompute expected flags for both fixtures against `thresholds.ts` and confirm the test assertions match that hand calculation exactly.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 4 — Model integration layer
+
+- [ ] **T4.1 ModelClient abstraction**
+  - *Context:* no real device/model exists in this sandbox — without this seam, nothing downstream is testable.
+  - *Deliverable:* `src/model/types.ts`.
+  - *Rubber-duck check:* every method the real engine needs is present, and nothing UI-specific has leaked into the interface.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T4.2 Mock engine + fixtures**
+  - *Context:* tests and any web-preview need deterministic model responses; fixtures double as living documentation of expected output shape.
+  - *Deliverable:* `src/model/mockEngine.ts` with Annapoorni, Ultra Milk, and a new shortbread-biscuit fixture.
+  - *Rubber-duck check:* each fixture response validates against the zod schema from T4.4 — not just hand-typed JSON that looks plausible.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T4.3 Prompts (ingredients + nutrition)**
+  - *Context:* prompt correctness drives OCR+decode quality directly; the ingredients prompt must request the model's own plain-meaning guess in the *same* call (glossary fallback) to avoid a second 15–28s round trip.
+  - *Deliverable:* `src/model/prompts/ingredients.ts`, `prompts/nutrition.ts`.
+  - *Rubber-duck check:* re-read each prompt field-by-field against the schema — does it actually ask for every field the type requires, including India fields and the multi-product variant?
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T4.4 Parser + zod validation + tests**
+  - *Context:* raw model output is untrusted text (code fences, occasional malformed JSON) — the spec's 4-step fallback chain must be actually implemented, not just described.
+  - *Deliverable:* `src/model/parser.ts`, `parser.test.ts`.
+  - *Rubber-duck check:* a test exists exercising each of the 4 fallback rungs independently (well-formed / fenced / malformed / unparseable-friendly-error).
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T4.5 Orchestration**
+  - *Context:* glues client+prompt+parser+glossary/rule-engine into the one call each screen needs.
+  - *Deliverable:* `src/model/detectIngredients.ts`, `detectNutrition.ts`.
+  - *Rubber-duck check:* trace one full call by hand (mock input → expected `ScanResult` fields) and confirm no field silently drops along the way.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 5 — Camera screen
+
+- [ ] **T5.1 Capture state hook**
+  - *Context:* encodes the confirmed unguided two-target/one-shutter flow — getting this state shape right up front avoids UI bugs later.
+  - *Deliverable:* `src/capture/useCaptureState.ts`.
+  - *Rubber-duck check:* walk all 4 user paths (ingredients-only / nutrition-only / both / neither→blocked) against the hook's exposed state and actions.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T5.2 Camera screen UI**
+  - *Context:* this is the literal confirmed UX — "two button one top and camera on bottom."
+  - *Deliverable:* `app/camera.tsx`.
+  - *Rubber-duck check:* does the built screen match that description exactly (top toggle, bottom shutter, per-slot indicator, Analyze gated on ≥1 capture)?
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T5.3 Settings screen**
+  - *Context:* auto single-photo mode was explicitly requested but must default off.
+  - *Deliverable:* `app/settings.tsx`.
+  - *Rubber-duck check:* confirm the toggle's default state is off on a fresh install, no persisted override needed to get "off."
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 6 — Processing & orchestration
+
+- [ ] **T6.1 Preprocessing**
+  - *Context:* spec requires 896×896 resize + [-1,1] normalization before inference; wrong preprocessing silently degrades model accuracy.
+  - *Deliverable:* `src/camera/preprocess.ts` (via `expo-image-manipulator`).
+  - *Rubber-duck check:* output dimensions/format match spec §6.2 exactly.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T6.2 runScan orchestrator**
+  - *Context:* the single place that must correctly branch on which photo(s) were captured and merge results without one panel's absence corrupting the other's data.
+  - *Deliverable:* `src/scan/runScan.ts`.
+  - *Rubber-duck check:* trace all 3 valid input combinations (ingredients-only / nutrition-only / both) through to the `ScanResult` shape by hand.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T6.3 Processing screen UI**
+  - *Context:* the 15–28s wait is called out in the spec as a first-class UX problem, not an afterthought.
+  - *Deliverable:* `app/processing.tsx` with step progress + cancel.
+  - *Rubber-duck check:* does cancel actually abort/discard the in-flight scan rather than just hiding the screen?
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 7 — Result screen (Conceptual Sketch Bento Box)
+
+- [ ] **T7.1 Design tokens**
+  - *Context:* the design style must be one consistent system, not per-screen improvisation.
+  - *Deliverable:* `src/ui/theme.ts`.
+  - *Rubber-duck check:* cross-check tokens against `CLAUDE.md`'s design section line-by-line (paper tone, single ink color, one accent reserved for warnings).
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T7.2 BentoGrid/SketchCard primitives**
+  - *Context:* reused on every screen; getting irregular-border/bento-cell behavior right once avoids re-deriving it per screen.
+  - *Deliverable:* `src/ui/BentoGrid.tsx`, `SketchCard.tsx`.
+  - *Rubber-duck check:* render with 1 cell and with 5 mismatched-size cells — does the grid tile without overlap in both?
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T7.3 Result screen composition**
+  - *Context:* this is where both use cases (decoded ingredients, balance verdict) actually reach the user — the whole point of the app.
+  - *Deliverable:* `app/result.tsx`.
+  - *Rubber-duck check:* with the shortbread-biscuit mock fixture rendered, confirm every field the user actually asked about (hidden ingredient names + why, balance verdict + which rules fired) is visibly on screen, not just present in data.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 8 — Persistence
+
+- [ ] **T8.1 SQLite history write-path**
+  - *Context:* scans shouldn't be lost even though the History *screen* is a follow-up pass.
+  - *Deliverable:* `src/db/history.ts`.
+  - *Rubber-duck check:* write then read back a `ScanResult` and confirm round-trip fidelity — no field lost across the JSON-blob/indexed-column split.
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 9 — Python prototyping harness
+
+- [ ] **T9.1 Prompt mirror + harness script**
+  - *Context:* the spec's hard workflow rule (no prompt ships to RN without 20+ real-photo validation in Python first) needs the harness scaffolded even though it can't run here.
+  - *Deliverable:* `python/prompts.py`, `python/test_harness.py`, `python/fixtures/README.md`.
+  - *Rubber-duck check:* `python/prompts.py` content matches `src/model/prompts/*.ts` instructions exactly (manual sync check, documented as a standing rule since it isn't automated).
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 10 — Docs
+
+- [ ] **T10.1 architecture.md**
+  - *Context:* the three confirmed ADRs (capture flow, glossary+fallback, deterministic verdict + threshold sourcing) need a durable written record separate from `CLAUDE.md`'s guidance role, or they get re-litigated later.
+  - *Deliverable:* `architecture.md` populated with module boundary + ADRs + `ScanResult` reference.
+  - *Rubber-duck check:* does it capture the *why* for each ADR, not just the *what* (which already lives in code)?
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T10.2 CLAUDE.md update**
+  - *Context:* it currently says "no commands yet," which becomes false the moment T0.1–T0.2 land.
+  - *Deliverable:* real `npm` scripts, pointer to `architecture.md`, updated structure section.
+  - *Rubber-duck check:* run every command `CLAUDE.md` now claims exists — do they all actually work?
+  - *Result:*
+  - *Completion summary:*
+
+### Phase 11 — Verification sweep
+
+- [ ] **T11.1 Full verification pass**
+  - *Context:* closes the loop on every completion claim above instead of trusting each task's self-report in isolation.
+  - *Deliverable:* run `typecheck`/`lint`/`test`, and a web-preview screenshot of the Result screen against the shortbread fixture.
+  - *Rubber-duck check / completion summary:* state pass/fail per check, and explicitly list what remains unverifiable in this sandbox — real device inference, real OCR accuracy, `python/test_harness.py` actually running, and the spec's 20+-real-photo validation gate.
+  - *Result:*
+  - *Completion summary:*
