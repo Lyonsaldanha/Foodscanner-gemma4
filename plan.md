@@ -209,12 +209,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 5 — Camera screen
 
-- [ ] **T5.1 Capture state hook**
+- [x] **T5.1 Capture state hook**
   - *Context:* encodes the confirmed unguided two-target/one-shutter flow — getting this state shape right up front avoids UI bugs later.
   - *Deliverable:* `src/capture/useCaptureState.ts`.
   - *Rubber-duck check:* walk all 4 user paths (ingredients-only / nutrition-only / both / neither→blocked) against the hook's exposed state and actions.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `useCaptureState(initialTarget?)` returns `{activeTarget, slots, setActiveTarget, capturePhoto, retake, reset, canAnalyze}`. `capturePhoto(uri)` always writes into whichever slot `activeTarget` currently names (the confirmed one-shutter/top-toggle model) rather than taking a target argument, so the toggle is the single source of truth for where a shot lands. `canAnalyze` is `slots.ingredients !== null || slots.nutrition !== null`. Also added `retake(target)` (clears one slot) and `reset()` (clears both) since the camera screen (T5.2) will need a way to redo a bad shot without this hook's shape needing revision later.
+  - *Completion summary:* Done. `useCaptureState.test.ts` has one test per user path (ingredients-only, nutrition-only, both-in-either-order, neither-stays-blocked) plus retake/reset coverage — 6 tests, all pass (42/42 total). Hit one environment snag along the way: this repo's `@testing-library/react-native@14.0.1` has an async `renderHook`/`act` (both return `Promise`, unlike older RTL versions), which only showed up as a `tsc` type error (`Property 'result' does not exist on type 'Promise<...>'`) — fixed by awaiting both throughout. `tsc --noEmit` and `expo lint` clean.
 
 - [ ] **T5.2 Camera screen UI**
   - *Context:* this is the literal confirmed UX — "two button one top and camera on bottom."
