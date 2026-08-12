@@ -156,12 +156,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 3 — Nutrition rule engine
 
-- [ ] **T3.1 Thresholds**
+- [x] **T3.1 Thresholds**
   - *Context:* the balance verdict must be explainable and reproducible, not invented — needs one documented, citable basis (UK-FSA-style per-100g cutoffs).
   - *Deliverable:* `src/nutrition/thresholds.ts` with inline rationale.
   - *Rubber-duck check:* every threshold has a stated source/rationale; units are consistently per-100g throughout.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `SUGAR_PER_100G` (low ≤5g, high >22.5g) and `SATURATED_FAT_PER_100G` (low ≤1.5g, high >5g) transcribe the UK FSA Front-of-Pack traffic-light guidance directly. `SODIUM_PER_100G` (low ≤120mg, high >600mg) is the FSA's salt-based cutoff (low ≤0.3g, high >1.5g salt/100g) converted via the standard salt = sodium × 2.5 factor, since the app schema stores `sodiumMg` not salt. `FIBER_PER_100G.goodMinG` (3g) and `PROTEIN_ENERGY_SHARE.goodMinFraction` (12% of energy) come from the EU/UK Nutrition and Health Claims Regulation (EC) 1924/2006 Annex "source of fibre"/"source of protein" claims. `PROTEIN_PER_100G_FALLBACK.goodMinG` (5g) is explicitly flagged in its own comment as a non-official proxy, used only when `energyKcal` is null and the %-of-energy protein claim can't be computed.
+  - *Completion summary:* Done. Every export has an inline comment naming its source (FSA FoP guidance or EC 1924/2006 Annex) or, for the one non-official value, says so explicitly rather than implying false authority. All thresholds are per-100g (sodium's mg unit is called out and derived consistently from the per-100g salt cutoff, not a different basis). `tsc --noEmit` and `expo lint` clean.
 
 - [ ] **T3.2 Rule engine + tests**
   - *Context:* this pure function IS the "is it balanced" answer the product promises — it must be deterministic to be trustworthy.
