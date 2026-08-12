@@ -1,6 +1,7 @@
 import type { ModelClient, ModelGenerateOptions, ModelLoadState } from "./types";
 import type { RawIngredientsOutput, RawNutritionOutput } from "./rawOutput";
 import { NUTRITION_SYSTEM_PROMPT } from "./prompts/nutrition";
+import { raceWithAbort } from "./abortable";
 
 // Canned fixture responses so tests and the web preview (no real device/model
 // in this sandbox) have deterministic model output. `annapoorni` and
@@ -109,6 +110,21 @@ export function getMockFixture(fixtureId: MockFixtureId): MockFixtureSet {
   return FIXTURES[fixtureId];
 }
 
+// A real await point (not a synchronous return) so a signal aborted right
+// after generate() is called can actually race and win — without this
+// there'd be no "in-flight" window for T13.3's cancellation tests to hit.
+async function resolveFixture(
+  fixture: RawIngredientsOutput | RawNutritionOutput | null,
+  kind: "ingredients" | "nutrition",
+  fixtureId: MockFixtureId
+): Promise<string> {
+  await Promise.resolve();
+  if (!fixture) {
+    throw new Error(`no ${kind} fixture recorded for "${fixtureId}"`);
+  }
+  return JSON.stringify(fixture);
+}
+
 export interface CreateMockModelClientOptions {
   fixtureId: MockFixtureId;
   kind: "ingredients" | "nutrition";
@@ -131,14 +147,13 @@ export function createMockModelClient(options: CreateMockModelClientOptions): Mo
       if (failure === "error") throw new Error("mock model failed to load");
     },
 
-    async generate(_options: ModelGenerateOptions): Promise<string> {
+    async generate(options: ModelGenerateOptions): Promise<string> {
       if (failure) throw new Error("mock model is not ready");
 
-      const fixture = FIXTURES[fixtureId][kind];
-      if (!fixture) {
-        throw new Error(`no ${kind} fixture recorded for "${fixtureId}"`);
-      }
-      return JSON.stringify(fixture);
+      return raceWithAbort(
+        resolveFixture(FIXTURES[fixtureId][kind], kind, fixtureId),
+        options.signal
+      );
     },
   };
 }
@@ -169,11 +184,10 @@ export function createMockModelClientForFixture(
       if (failure) throw new Error("mock model is not ready");
 
       const kind: "ingredients" | "nutrition" = options.systemPrompt === NUTRITION_SYSTEM_PROMPT ? "nutrition" : "ingredients";
-      const fixture = FIXTURES[fixtureId][kind];
-      if (!fixture) {
-        throw new Error(`no ${kind} fixture recorded for "${fixtureId}"`);
-      }
-      return JSON.stringify(fixture);
+      return raceWithAbort(
+        resolveFixture(FIXTURES[fixtureId][kind], kind, fixtureId),
+        options.signal
+      );
     },
   };
 }

@@ -81,3 +81,15 @@ describe("runScan — both photos captured", () => {
     await expect(runScan({ client, slots: both })).rejects.toThrow();
   });
 });
+
+describe("runScan — cancellation (T13.3)", () => {
+  it("rejects rather than resolving when the scan is aborted mid-flight", async () => {
+    const client = createMockModelClientForFixture("shortbreadBiscuit");
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(runScan({ client, slots: both, signal: controller.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+});

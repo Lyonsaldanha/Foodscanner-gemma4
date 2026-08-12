@@ -1,6 +1,7 @@
 import { createLLM, GEMMA_4_E2B_IT, checkBackendSupport, getRecommendedBackend, isMemoryError } from "react-native-litert-lm";
 import type { Backend } from "react-native-litert-lm";
 import type { ModelClient, ModelGenerateOptions, ModelLoadState } from "./types";
+import { raceWithAbort } from "./abortable";
 
 // The real ModelClient (T4.1's seam), wrapping react-native-litert-lm.
 // Requires a native build (npx expo prebuild + expo run:android) and a
@@ -84,9 +85,23 @@ export const realModelClient: ModelClient = {
       throw new Error("Model not loaded — call ensureReady() before generate().");
     }
     llm.resetConversation(undefined, options.systemPrompt);
-    return llm.execute([
+    const executePromise = llm.execute([
       { type: "text", text: options.userPrompt },
       { type: "image", path: options.image.uri },
     ]);
+
+    // T13.3: react-native-litert-lm 0.6 has no cancellation API (checked its
+    // full type surface — no abort/cancel/stop on LiteRTLMInstance or
+    // ExecuteOptions), so aborting here can only make the PROMISE our caller
+    // is awaiting settle immediately; the native inference call itself keeps
+    // running until it finishes on its own, and its (now-unwanted) result is
+    // just discarded. This is a real, disclosed limitation of the installed
+    // package version, not a full mid-flight stop — see plan.md T13.3.
+    if (options.signal) {
+      executePromise.catch(() => {
+        // Prevent an unhandled rejection once this result is abandoned below.
+      });
+    }
+    return raceWithAbort(executePromise, options.signal);
   },
 };

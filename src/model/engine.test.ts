@@ -129,6 +129,32 @@ describe("realModelClient", () => {
     });
   });
 
+  describe("generate()'s signal handling (T13.3)", () => {
+    // react-native-litert-lm 0.6 has no cancellation API (checked the whole
+    // installed type surface — no abort/cancel/stop anywhere), so this can
+    // only prove the wrapping *promise* settles promptly, not that the
+    // underlying (mocked) execute() call itself was told to stop — there is
+    // nothing in the package to tell.
+    it("rejects promptly once the signal fires, even though the native execute() call never resolves", async () => {
+      const client = loadFreshClient();
+      mockLoadModel.mockResolvedValue(undefined);
+      await client.ensureReady();
+
+      mockExecute.mockReturnValue(new Promise(() => {})); // never resolves/rejects
+      const controller = new AbortController();
+
+      const promise = client.generate({
+        systemPrompt: "s",
+        userPrompt: "u",
+        image: { uri: "file://x.jpg", width: 1, height: 1 },
+        signal: controller.signal,
+      });
+      controller.abort();
+
+      await expect(promise).rejects.toMatchObject({ name: "AbortError" });
+    });
+  });
+
   describe("MemoryError handling", () => {
     it("surfaces a MemoryError from loadModel as a load-error state, not an uncaught crash", async () => {
       const client = loadFreshClient();

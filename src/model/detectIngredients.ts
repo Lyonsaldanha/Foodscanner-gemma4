@@ -66,13 +66,15 @@ function decodeRawIngredient(raw: RawIngredientEntry): DecodedIngredient {
 
 export async function detectIngredients(
   client: ModelClient,
-  image: PreprocessedImage
+  image: PreprocessedImage,
+  signal?: AbortSignal
 ): Promise<DetectIngredientsResult> {
   await client.ensureReady();
   const raw = await client.generate({
     systemPrompt: INGREDIENTS_SYSTEM_PROMPT,
     userPrompt: buildIngredientsUserPrompt(),
     image,
+    signal,
   });
 
   const parsed = parseModelOutput(raw, RawIngredientsOutputSchema);

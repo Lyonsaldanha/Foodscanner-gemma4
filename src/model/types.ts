@@ -11,6 +11,10 @@ export interface ModelGenerateOptions {
   systemPrompt: string;
   userPrompt: string;
   image: PreprocessedImage;
+  // Optional (T13.3): lets a caller abandon a generate() call early — e.g.
+  // Processing screen's Cancel button. See src/model/abortable.ts for what
+  // this can and can't actually stop.
+  signal?: AbortSignal;
 }
 
 // Mirrors the model lifecycle from ingredient-lens-spec.md §7 (first-launch

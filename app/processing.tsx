@@ -32,6 +32,11 @@ export default function ProcessingScreen() {
   // Checked after runScan resolves so a cancelled scan's result is actually
   // discarded, not just hidden behind a screen that already navigated away.
   const cancelledRef = useRef(false);
+  // T13.3: aborting this makes the in-flight generate() call's promise
+  // reject promptly instead of only being noticed after it finishes on its
+  // own — see src/model/abortable.ts for what it can't do (stop the native
+  // call itself, on a real device).
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const hasIngredients = !!params.ingredientsUri;
   const hasNutrition = !!params.nutritionUri;
@@ -42,6 +47,8 @@ export default function ProcessingScreen() {
 
   useEffect(() => {
     cancelledRef.current = false;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const slots: CaptureSlots = {
       ingredients: params.ingredientsUri ? { uri: params.ingredientsUri, capturedAt: new Date().toISOString() } : null,
@@ -60,7 +67,7 @@ export default function ProcessingScreen() {
     async function run() {
       try {
         const client = await pickModelClient();
-        const outcome = await runScan({ client, slots });
+        const outcome = await runScan({ client, slots, signal: controller.signal });
         if (cancelledRef.current) return;
 
         if (!outcome.success) {
@@ -88,12 +95,14 @@ export default function ProcessingScreen() {
 
     return () => {
       revealTimers.forEach(clearTimeout);
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.ingredientsUri, params.nutritionUri]);
 
   const handleCancel = () => {
     cancelledRef.current = true;
+    abortControllerRef.current?.abort();
     router.back();
   };
 

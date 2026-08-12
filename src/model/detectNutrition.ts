@@ -19,13 +19,15 @@ export type DetectNutritionResult =
 
 export async function detectNutrition(
   client: ModelClient,
-  image: PreprocessedImage
+  image: PreprocessedImage,
+  signal?: AbortSignal
 ): Promise<DetectNutritionResult> {
   await client.ensureReady();
   const raw = await client.generate({
     systemPrompt: NUTRITION_SYSTEM_PROMPT,
     userPrompt: buildNutritionUserPrompt(),
     image,
+    signal,
   });
 
   const parsed = parseModelOutput(raw, RawNutritionOutputSchema);
