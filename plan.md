@@ -172,12 +172,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 4 — Model integration layer
 
-- [ ] **T4.1 ModelClient abstraction**
+- [x] **T4.1 ModelClient abstraction**
   - *Context:* no real device/model exists in this sandbox — without this seam, nothing downstream is testable.
   - *Deliverable:* `src/model/types.ts`.
   - *Rubber-duck check:* every method the real engine needs is present, and nothing UI-specific has leaked into the interface.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `ModelClient` interface: `getLoadState()` (returns a `ModelLoadState` union mirroring spec §7's not_downloaded/downloading/loading/ready/error lifecycle), `ensureReady()` (resolves once download+load complete, no-op if already ready), and `generate({systemPrompt, userPrompt, image})` (one inference call, raw text out — parsing is explicitly the parser's job, not the client's, per the module boundary in this file's Architecture section). `PreprocessedImage` is the seam type for T6.1's preprocess output (`uri/width/height`), so the client never touches raw camera bytes.
+  - *Completion summary:* Done. Cross-checked against spec §11.2's real API shape (`useModel` returning `{model, isReady, downloadProgress}`, `model.sendMessage(text, {image})`) — `getLoadState`/`ensureReady` cover the hook's readiness/download surface, `generate` covers `sendMessage`. No React hooks, screen names, or navigation concepts leaked into the interface — it's a plain object shape callable from orchestration code or tests alike. `tsc --noEmit` and `expo lint` clean. Note left in comments: a real implementation will need a small wrapper to bridge react-native-litert-lm's hook-based API into this plain interface — not built this pass (no task for it, no device to validate against).
 
 - [ ] **T4.2 Mock engine + fixtures**
   - *Context:* tests and any web-preview need deterministic model responses; fixtures double as living documentation of expected output shape.
