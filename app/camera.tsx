@@ -68,6 +68,9 @@ export default function CameraScreen() {
           captured={captureState.slots.nutrition !== null}
           onPress={() => captureState.setActiveTarget("nutrition")}
         />
+        <Link href="/history" style={styles.historyLink}>
+          <Text style={styles.settingsLinkText}>☰</Text>
+        </Link>
         <Link href="/settings" style={styles.settingsLink}>
           <Text style={styles.settingsLinkText}>⚙</Text>
         </Link>
@@ -198,8 +201,17 @@ const styles = StyleSheet.create({
   toggleButtonTextActive: {
     color: INK,
   },
-  settingsLink: {
+  historyLink: {
     marginLeft: "auto",
+    borderWidth: 2,
+    borderColor: PAPER,
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingsLink: {
     borderWidth: 2,
     borderColor: PAPER,
     borderRadius: 20,

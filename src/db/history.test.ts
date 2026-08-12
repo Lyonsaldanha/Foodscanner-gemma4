@@ -1,5 +1,5 @@
 import type { ScanResult } from "../types/scan";
-import { deserializeScanResult, getAllScans, getScanById, insertScan, serializeScanResult } from "./history";
+import { deserializeScanResult, getAllScans, getScanById, getScanSummaries, insertScan, serializeScanResult } from "./history";
 
 // expo-sqlite needs a real native bridge, unavailable in this sandbox (no
 // device) — mocked with a tiny in-memory array standing in for the table,
@@ -120,5 +120,35 @@ describe("insertScan / getScanById / getAllScans — write then read back", () =
     expect(all.length).toBeGreaterThanOrEqual(2);
     expect(all.some((s) => s.productLabel === "Second Product")).toBe(true);
     expect(all.some((s) => s.productLabel === "Golden Crumb Shortbread Biscuits")).toBe(true);
+  });
+});
+
+describe("getScanSummaries — the History list screen's data source", () => {
+  it("includes every written scan as a summary, most recent first, without needing the full blob", async () => {
+    await insertScan(fullScanResult);
+    const secondScan: ScanResult = {
+      ...fullScanResult,
+      scannedAt: "2026-08-12T12:00:00.000Z",
+      productLabel: "Third Product",
+      balance: { ...fullScanResult.balance!, overall: "everyday" },
+    };
+    const secondId = await insertScan(secondScan);
+
+    const summaries = await getScanSummaries();
+    expect(summaries.length).toBeGreaterThanOrEqual(2);
+
+    // toMatchObject, not toEqual: the mocked expo-sqlite (unlike real
+    // SQLite) doesn't simulate column projection, so getAllAsync returns
+    // full rows including scanResultJson regardless of the SELECT list —
+    // this only asserts the summary fields getScanSummaries actually reads.
+    const secondSummary = summaries.find((s) => s.id === secondId);
+    expect(secondSummary).toMatchObject({
+      id: secondId,
+      scannedAt: "2026-08-12T12:00:00.000Z",
+      productLabel: "Third Product",
+      overall: "everyday",
+    });
+    // Most-recent-first: the just-inserted scan (latest scannedAt) is first.
+    expect(summaries[0].id).toBe(secondId);
   });
 });

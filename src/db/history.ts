@@ -70,3 +70,19 @@ export async function getAllScans(): Promise<ScanResult[]> {
   const rows = await db.getAllAsync<ScanHistoryRow>(`SELECT * FROM scan_history ORDER BY scannedAt DESC;`);
   return rows.map(deserializeScanResult);
 }
+
+// The History list screen only needs the indexed columns, not the full
+// JSON blob every row carries — this is what those columns were added for.
+export interface ScanSummary {
+  id: number;
+  scannedAt: string;
+  productLabel: string | null;
+  overall: string | null;
+}
+
+export async function getScanSummaries(): Promise<ScanSummary[]> {
+  const db = await getDb();
+  return db.getAllAsync<ScanSummary>(
+    `SELECT id, scannedAt, productLabel, overall FROM scan_history ORDER BY scannedAt DESC;`
+  );
+}

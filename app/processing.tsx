@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { runScan } from "../src/scan/runScan";
 import { createMockModelClientForFixture } from "../src/model/mockEngine";
+import { insertScan } from "../src/db/history";
 import { setLastScanResult } from "../src/scan/lastScanResult";
 import type { CaptureSlots } from "../src/types/capture";
 import type { ModelClient } from "../src/model/types";
@@ -90,6 +91,14 @@ export default function ProcessingScreen() {
         }
         setCompletedCount(steps.length);
         setLastScanResult(outcome.scanResult);
+        try {
+          await insertScan(outcome.scanResult);
+        } catch {
+          // Best-effort persistence — a save failure shouldn't block showing
+          // the result the user already waited for. The scan just won't
+          // appear in History.
+        }
+        if (cancelledRef.current) return;
         router.replace("/result");
       } catch (e) {
         if (cancelledRef.current) return;
