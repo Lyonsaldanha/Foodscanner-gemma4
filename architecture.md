@@ -16,7 +16,7 @@ Real commands exist now: `npm run typecheck`, `npm run lint`, `npm test`, `npm r
 | Layer | Technology |
 | --- | --- |
 | App framework | React Native + Expo (expo-router, file-based screens) |
-| On-device inference | LiteRT-LM via `react-native-litert-lm` — **not yet built**; see "What's not built" below |
+| On-device inference | LiteRT-LM via `react-native-litert-lm` — real `ModelClient` (`src/model/engine.ts`) is **built and mock-tested, never run on real hardware**; see "What's not built" below |
 | Model | Gemma 4 E2B (multimodal, `.litertlm` mobile format) |
 | Camera | `expo-camera` |
 | Image preprocessing | `expo-image-manipulator` |
@@ -38,6 +38,7 @@ app/
 ├── camera.tsx           # Capture screen: top toggle, bottom shutter, Analyze
 ├── settings.tsx          # Single-photo auto mode toggle (off by default)
 ├── processing.tsx         # Sequential step reveal, calls runScan, Cancel discards stale results
+│                           # picks mock vs. real ModelClient via EXPO_PUBLIC_USE_MOCK_MODEL (default: mock)
 └── result.tsx              # Bento-grid rendering of ScanResult
 
 src/
@@ -58,6 +59,8 @@ src/
 │   │   └── nutrition.ts        # System+user prompt for the nutrition photo
 │   ├── parser.ts            # 3-rung fallback chain: well-formed / fenced / extracted-from-prose
 │   ├── mockEngine.ts         # ModelClient mock — canned fixtures, no device needed
+│   ├── engine.ts            # Real ModelClient, wraps react-native-litert-lm — built, never run (no device)
+│   ├── engine.test.ts         # Mocks react-native-litert-lm to test engine.ts's own mapping logic
 │   ├── detectIngredients.ts    # ModelClient+prompt+parser+glossary decoder, one call
 │   └── detectNutrition.ts      # ModelClient+prompt+parser+rule engine, one call
 ├── camera/
@@ -82,7 +85,7 @@ python/
 
 ## What's not built this pass
 
-- **The real `ModelClient` implementation** wrapping `react-native-litert-lm` (`engine.ts` in the original spec's structure). `ModelClient` (ADR 1) is the seam it will attach to; every other module is built and tested against a mock (`src/model/mockEngine.ts`) because no real device or `.litertlm` weights exist in this dev sandbox. The Processing screen currently calls `createMockModelClientForFixture("shortbreadBiscuit")` directly with a `TODO(real device)` comment marking exactly where the swap happens.
+- **Real on-device inference itself.** `src/model/engine.ts` — the real `ModelClient` wrapping `react-native-litert-lm` — is written, type-checked against the real installed package types, and has its own mapping logic (progress→state, systemPrompt reset-before-execute, MemoryError handling) unit-tested with the package mocked (`engine.test.ts`). It has **never been run against real hardware**: no native build, no physical device, no `.litertlm` weights exist in this dev sandbox, so whether it actually works against the real API is unverified. `app/processing.tsx` picks it over the mock via `EXPO_PUBLIC_USE_MOCK_MODEL=false` (default: mock) — a dynamic `import()` gates loading `engine.ts` so the native-only package is never evaluated on the (default) mock/web-preview path. Every other module is built and tested against the mock (`src/model/mockEngine.ts`).
 - **History screen** (UI) — the write-path (`src/db/history.ts`) exists and is tested, but there's no `app/history.tsx` yet.
 - **Onboarding / model-download screen** — not built; `ModelLoadState` in `src/model/types.ts` already models the not_downloaded/downloading/loading/ready/error lifecycle for whenever it is.
 - **True mid-flight scan cancellation.** Processing's Cancel button discards a stale result correctly (checked via a ref before acting on `runScan`'s resolution) but does not abort the in-flight model call itself — no `AbortSignal` is threaded through `ModelClient.generate`.
@@ -94,9 +97,9 @@ python/
 
 **Decision:** Every module above `src/model/types.ts`'s `ModelClient` interface (orchestration, screens) codes against that interface, never against `react-native-litert-lm` directly. `src/model/mockEngine.ts` is the only implementation that currently exists.
 
-**Why:** There is no real Android device, no downloaded `.litertlm` weights, and no real product photos available in this dev sandbox — full stop. Without this seam, nothing past the camera screen would be buildable or testable here at all. With it, the glossary decoder, rule engine, parser, prompts, and orchestration are all fully unit-tested (52 tests as of this writing) against deterministic mock responses, and the *only* thing left unverified is the real device integration itself — a much smaller, clearly-bounded gap than "nothing works without a phone."
+**Why:** There is no real Android device, no downloaded `.litertlm` weights, and no real product photos available in this dev sandbox — full stop. Without this seam, nothing past the camera screen would be buildable or testable here at all. With it, the glossary decoder, rule engine, parser, prompts, and orchestration are all fully unit-tested (59 tests as of this writing) against deterministic mock responses, and the *only* thing left unverified is the real device integration itself — a much smaller, clearly-bounded gap than "nothing works without a phone."
 
-**Consequence:** A future session with real hardware needs to write exactly one new file (a real `ModelClient` implementation wrapping `react-native-litert-lm`'s hook-based `useModel`/`sendMessage` API) and swap the one `createMockModelClientForFixture(...)` call in `app/processing.tsx`. Nothing else should need to change.
+**Consequence, updated:** The real implementation (`src/model/engine.ts`) now exists — it turned out to need the package's plain imperative API (`createLLM`/`loadModel`/`execute`/`resetConversation`), not a React-hook bridge, once the installed package's actual types were checked instead of assumed from docs. `app/processing.tsx` already picks it via `EXPO_PUBLIC_USE_MOCK_MODEL=false`, so no further code swap is needed. What's left is purely a hardware gap, not a code gap: a native build (`expo prebuild` + `expo run:android`) and a physical device to actually run it on and see if the real API behaves as documented.
 
 ### ADR 2 — Glossary-first, model-fallback ingredient decoding, same inference call
 
