@@ -2,33 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { runScan } from "../src/scan/runScan";
-import { createMockModelClientForFixture } from "../src/model/mockEngine";
+import { pickModelClient } from "../src/model/pickModelClient";
 import { insertScan } from "../src/db/history";
 import { setLastScanResult } from "../src/scan/lastScanResult";
 import type { CaptureSlots } from "../src/types/capture";
-import type { ModelClient } from "../src/model/types";
 import { colors, fonts, radii, strokes } from "../src/ui/theme";
-
-// Defaults to the mock so the web preview and existing test/demo flow are
-// unaffected — set EXPO_PUBLIC_USE_MOCK_MODEL=false to attempt the real
-// react-native-litert-lm-backed client (native build + device only; see
-// src/model/engine.ts and plan.md T12.1-T12.2). This flag is the only
-// thing that needs to change to try the real path.
-//
-// engine.ts is loaded via a *dynamic* import, not a static one: it pulls in
-// react-native-litert-lm, a native-only package whose module-level side
-// effects crash Expo's web bundle if evaluated eagerly (confirmed live —
-// static import broke the web preview even with the mock branch selected,
-// because expo-router bundles this screen's module graph eagerly). A
-// dynamic import is only evaluated when this branch actually runs, so the
-// mock (default) path never touches it.
-async function pickModelClient(): Promise<ModelClient> {
-  if (process.env.EXPO_PUBLIC_USE_MOCK_MODEL === "false") {
-    const { realModelClient } = await import("../src/model/engine");
-    return realModelClient;
-  }
-  return createMockModelClientForFixture("shortbreadBiscuit");
-}
 
 const INK = colors.ink;
 const PAPER = colors.paper;
