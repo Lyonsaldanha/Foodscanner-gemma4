@@ -3,7 +3,7 @@ import { INGREDIENTS_SYSTEM_PROMPT, buildIngredientsUserPrompt } from "./prompts
 import { parseModelOutput } from "./parser";
 import { RawIngredientsOutputSchema, type RawIngredientEntry } from "./rawOutput";
 import { decodeIngredient } from "../glossary/decoder";
-import type { DecodedIngredient, DietaryFlags } from "../types/scan";
+import type { DecodedIngredient } from "../types/scan";
 
 export interface IngredientsDetectionResult {
   productLabel: string | null;
@@ -11,7 +11,6 @@ export interface IngredientsDetectionResult {
   allergensDetected: string[];
   isVegetarian: boolean | null;
   fssaiLicenseNumber: string | null;
-  dietaryFlags: DietaryFlags | null;
   language: string | null;
   notes: string | null;
 }
@@ -90,7 +89,6 @@ export async function detectIngredients(
       allergensDetected: data.allergensDetected,
       isVegetarian: data.isVegetarian,
       fssaiLicenseNumber: data.fssaiLicenseNumber,
-      dietaryFlags: data.dietaryFlags,
       language: data.language,
       notes: data.notes,
     },

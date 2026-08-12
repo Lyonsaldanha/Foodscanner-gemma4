@@ -20,20 +20,9 @@ Return ONLY a single valid JSON object — no markdown code fences, no commentar
   "allergensDetected": ["string", "..."],
   "isVegetarian": true, false, or null — based on the pack's green (vegetarian) or brown/red (non-vegetarian) dot symbol if visible, otherwise inferred from the ingredient list, otherwise null if you cannot tell,
   "fssaiLicenseNumber": "string or null — the FSSAI license number printed on the pack (usually a 14-digit number near 'FSSAI Lic. No.'), null if not visible or not present",
-  "dietaryFlags": {
-    "jain": true or false,
-    "iyengar": true or false,
-    "sattvic": true or false
-  },
   "language": "string or null — the language(s) the on-pack text is written in",
   "notes": "string or null — any manufacturer claims worth surfacing, e.g. 'no artificial colours or preservatives'"
 }
-
-How to fill "dietaryFlags", based on the ingredient list you extracted:
-- "jain": true only if there is no onion, garlic, or root vegetable (e.g. ginger, potato, carrot) among the ingredients.
-- "iyengar": true only if there is no onion, garlic, or meat among the ingredients.
-- "sattvic": true only if the product avoids onion, garlic, meat, alcohol, and heavily processed/artificial additives (artificial colours, artificial flavourings, and similar count against it).
-If you cannot read the ingredient list well enough to judge a flag, set that flag to false rather than guessing favourably. Always attempt "dietaryFlags" for every product, regardless of where it appears to be from — set the whole "dietaryFlags" object to null only if you could not read the ingredient list at all.
 
 If more than one distinct product is visible in the photo, describe only the single most prominent, front-facing product — do not return an array of products.
 

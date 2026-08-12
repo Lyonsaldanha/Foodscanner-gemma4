@@ -45,7 +45,6 @@ describe("detectIngredients — traced against the shortbread mock fixture", () 
     expect(result.allergensDetected).toEqual(["Wheat (Gluten)", "Soya"]);
     expect(result.isVegetarian).toBe(true);
     expect(result.fssaiLicenseNumber).toBe("10023045001987");
-    expect(result.dietaryFlags).toEqual({ jain: true, iyengar: true, sattvic: false });
     expect(result.language).toBe("English");
     expect(result.notes).toBe("No real butter; uses artificial butter flavouring. Contains gluten and soya.");
   });

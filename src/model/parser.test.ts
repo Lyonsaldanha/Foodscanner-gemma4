@@ -65,7 +65,6 @@ describe("parseModelOutput — integration with the real ingredients schema", ()
       allergensDetected: ["Wheat"],
       isVegetarian: true,
       fssaiLicenseNumber: null,
-      dietaryFlags: { jain: true, iyengar: true, sattvic: false },
       language: "English",
       notes: null,
     };

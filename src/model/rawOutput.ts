@@ -8,12 +8,6 @@ import { z } from "zod";
 // match, whereas DecodedIngredient carries the *resolved* meaning + which
 // source resolved it.
 
-export const RawDietaryFlagsSchema = z.object({
-  jain: z.boolean(),
-  iyengar: z.boolean(),
-  sattvic: z.boolean(),
-});
-
 export const RawIngredientEntrySchema = z.object({
   name: z.string(),
   confidence: z.number().min(0).max(1),
@@ -28,7 +22,6 @@ export const RawIngredientsOutputSchema = z.object({
   allergensDetected: z.array(z.string()),
   isVegetarian: z.boolean().nullable(),
   fssaiLicenseNumber: z.string().nullable(),
-  dietaryFlags: RawDietaryFlagsSchema.nullable(),
   language: z.string().nullable(),
   notes: z.string().nullable(),
 });

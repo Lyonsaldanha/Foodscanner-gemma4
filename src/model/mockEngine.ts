@@ -1,5 +1,6 @@
 import type { ModelClient, ModelGenerateOptions, ModelLoadState } from "./types";
 import type { RawIngredientsOutput, RawNutritionOutput } from "./rawOutput";
+import { NUTRITION_SYSTEM_PROMPT } from "./prompts/nutrition";
 
 // Canned fixture responses so tests and the web preview (no real device/model
 // in this sandbox) have deterministic model output. `annapoorni` and
@@ -32,7 +33,6 @@ const annapoorniIngredients: RawIngredientsOutput = {
   allergensDetected: ["Mustard", "Chenna Dal (Legume)"],
   isVegetarian: true,
   fssaiLicenseNumber: "10015064000123",
-  dietaryFlags: { jain: false, iyengar: true, sattvic: false },
   language: "English with Hindi instructions",
   notes: "Product is free from artificial colours and preservatives.",
 };
@@ -50,7 +50,6 @@ const ultraMilkChocolateIngredients: RawIngredientsOutput = {
   allergensDetected: ["Milk"],
   isVegetarian: true,
   fssaiLicenseNumber: null,
-  dietaryFlags: null,
   language: "Bahasa Indonesia + English",
   notes: "Contains milk allergens; chocolate-flavoured with added sugar and cocoa.",
 };
@@ -70,7 +69,6 @@ const shortbreadIngredients: RawIngredientsOutput = {
   allergensDetected: ["Wheat (Gluten)", "Soya"],
   isVegetarian: true,
   fssaiLicenseNumber: "10023045001987",
-  dietaryFlags: { jain: true, iyengar: true, sattvic: false },
   language: "English",
   notes: "No real butter; uses artificial butter flavouring. Contains gluten and soya.",
 };
@@ -136,6 +134,41 @@ export function createMockModelClient(options: CreateMockModelClientOptions): Mo
     async generate(_options: ModelGenerateOptions): Promise<string> {
       if (failure) throw new Error("mock model is not ready");
 
+      const fixture = FIXTURES[fixtureId][kind];
+      if (!fixture) {
+        throw new Error(`no ${kind} fixture recorded for "${fixtureId}"`);
+      }
+      return JSON.stringify(fixture);
+    },
+  };
+}
+
+// A single client that answers BOTH detectIngredients' and detectNutrition's
+// calls correctly by reading which prompt it was given — unlike
+// createMockModelClient above (fixed at construction time, meant for
+// testing one detect* call in isolation), this is what runScan (T6.2) needs
+// since it drives one client through up to two different-kind calls in the
+// same scan.
+export function createMockModelClientForFixture(
+  fixtureId: MockFixtureId,
+  failure?: CreateMockModelClientOptions["failure"]
+): ModelClient {
+  return {
+    getLoadState(): ModelLoadState {
+      if (failure === "not_downloaded") return { status: "not_downloaded" };
+      if (failure === "error") return { status: "error", message: "mock model failed to load" };
+      return { status: "ready" };
+    },
+
+    async ensureReady(): Promise<void> {
+      if (failure === "not_downloaded") throw new Error("mock model is not downloaded");
+      if (failure === "error") throw new Error("mock model failed to load");
+    },
+
+    async generate(options: ModelGenerateOptions): Promise<string> {
+      if (failure) throw new Error("mock model is not ready");
+
+      const kind: "ingredients" | "nutrition" = options.systemPrompt === NUTRITION_SYSTEM_PROMPT ? "nutrition" : "ingredients";
       const fixture = FIXTURES[fixtureId][kind];
       if (!fixture) {
         throw new Error(`no ${kind} fixture recorded for "${fixtureId}"`);

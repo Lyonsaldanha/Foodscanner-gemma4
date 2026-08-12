@@ -46,12 +46,6 @@ export interface BalanceVerdict {
   summary: string; // one templated sentence built from the flags
 }
 
-export interface DietaryFlags {
-  jain: boolean;
-  iyengar: boolean;
-  sattvic: boolean;
-}
-
 export interface ScanResult {
   scannedAt: string;
   productLabel: string | null;
@@ -59,7 +53,6 @@ export interface ScanResult {
   allergensDetected: string[];
   isVegetarian: boolean | null;
   fssaiLicenseNumber: string | null;
-  dietaryFlags: DietaryFlags | null;
   language: string | null;
   nutrition: NutritionPer100g | null;
   balance: BalanceVerdict | null;

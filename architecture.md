@@ -85,5 +85,5 @@ Output parsing must go through the fallback chain in this order (spec 8.5), not 
 When working on India-facing behavior, account for:
 - **Allergen vocabulary in Hindi**: Sesame/Til (तिल), Tree nuts/Mewe (मेवे), Legumes/Dal (दालें), Mustard/Rai (राई), Asafoetida/Hing (हींग) — plus regional alternate names (e.g., Badam/Kaju for nuts).
 - **FSSAI compliance signals**: FSSAI license number on packaging, and the vegetarian (green square)/non-vegetarian (red square) symbol — these should be extracted, not just prose ingredients.
-- **Dietary practice flags** beyond simple vegetarian/non-veg: Jain (no onion/garlic/root vegetables), Iyengar (no onion/garlic/meat), Sattvic.
+- **Dietary practice flags** (Jain/Iyengar/Sattvic) were considered but removed from the schema on 2026-08-12 — see `plan.md`'s "Confirmed decisions" section for why. `isVegetarian` and FSSAI license number remain.
 - **Regional scripts**: labels may mix Devanagari, Tamil, Telugu, Kannada, Marathi with English on the same package — this is handled natively by Gemma 4 E2B's multilingual training, not by app-side language switching.
