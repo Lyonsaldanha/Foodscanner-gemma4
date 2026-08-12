@@ -140,19 +140,19 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 2 — Glossary module
 
-- [ ] **T2.1 Glossary seed data**
+- [x] **T2.1 Glossary seed data**
   - *Context:* deterministic decoding needs real curated data — this file IS the "maida is refined flour" value proposition.
   - *Deliverable:* `src/glossary/data.json`, ~25 entries (maida, invert sugar syrup, maltodextrin, HFCS, hydrogenated/palm oil, sodium benzoate, etc.), each with `aliases/plainMeaning/category/healthNote`.
   - *Rubber-duck check:* no placeholder text in any entry; spot-check 3 entries against public food-labeling knowledge for accuracy.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `src/glossary/data.json` — 28 entries, each with `id/aliases/plainMeaning/category/healthNote`. Covers added sugars (maida-adjacent invert sugar syrup, maltodextrin, HFCS, corn syrup solids, dextrose), trans-fat/oil sources (hydrogenated vegetable oil, palm oil), preservatives (sodium benzoate, potassium sorbate, sodium metabisulphite, TBHQ, sodium nitrite, calcium propionate, BHA), sweeteners (aspartame, sucralose, acesulfame-K), emulsifiers/stabilizers (mono-/diglycerides, lecithin, carrageenan, xanthan gum), artificial colours (tartrazine, sunset yellow, erythrosine), and flavour enhancers (MSG, hydrolyzed vegetable protein), plus a natural leavening agent (ammonium bicarbonate) to show the glossary isn't only-negative.
+  - *Completion summary:* Done. Scripted validation confirms all 28 entries have non-empty `id/aliases/plainMeaning/category/healthNote` and no placeholder/TODO text. Spot-checked 3 against public food-labeling knowledge: maida (refined wheat flour, bran/germ removed, low fiber) correct; sodium benzoate (E211, benzene-formation caveat with ascorbic acid under light/heat) correct and appropriately hedged; tartrazine (E102, azo dye, hyperactivity-study association, FSSAI-permitted within limits) correct. `category` values are consistent strings ready for T2.2's decoder to key off.
 
-- [ ] **T2.2 Decoder + tests**
+- [x] **T2.2 Decoder + tests**
   - *Context:* OCR text won't exactly match glossary keys (case/plurals/typos) — matching must be robust or the glossary is dead weight.
   - *Deliverable:* `src/glossary/decoder.ts`, `decoder.test.ts`.
   - *Rubber-duck check:* confirm the test suite actually exercises exact-match, fuzzy/typo-match, and no-match→`null` separately, not just a happy path.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `decodeIngredient(rawName)` normalizes case/whitespace/punctuation, de-pluralizes (with a sibilant-aware rule so "-ates" words like "benzoates" don't get mangled to "-at"), does an exact-match pass against all alias strings first, then falls back to a length-scaled Levenshtein fuzzy pass (0 edits allowed ≤4 chars, 1 edit ≤8 chars, 2 edits beyond — so short words like "salt" can't false-positive-match). Returns `{entry, matchedAlias, matchType}` or `null`. Also added `@types/jest` (missing devDependency) and `"types": ["jest"]` to `tsconfig.json` — `describe`/`it`/`expect` weren't resolving without it.
+  - *Completion summary:* Done. `decoder.test.ts` has 8 tests in 3 explicit groups: exact-match (case/whitespace, plural-normalized, multi-word alias), fuzzy-match (missing-letter typo, substituted-letter typo, negative case confirming short words don't false-positive), and no-match (unrelated word, empty/whitespace string) — all pass. `tsc --noEmit`, `expo lint`, and `npm test` all clean.
 
 ### Phase 3 — Nutrition rule engine
 
