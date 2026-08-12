@@ -80,7 +80,15 @@ export default function CameraScreen() {
         {captureState.canAnalyze ? (
           <Pressable
             style={styles.analyzeButton}
-            onPress={() => router.push("/processing")}
+            onPress={() =>
+              router.push({
+                pathname: "/processing",
+                params: {
+                  ingredientsUri: captureState.slots.ingredients?.uri ?? "",
+                  nutritionUri: captureState.slots.nutrition?.uri ?? "",
+                },
+              })
+            }
             accessibilityLabel="Analyze captured photos"
           >
             <Text style={styles.analyzeButtonText}>Analyze</Text>
