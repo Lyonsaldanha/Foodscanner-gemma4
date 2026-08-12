@@ -258,12 +258,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 7 — Result screen (Conceptual Sketch Bento Box)
 
-- [ ] **T7.1 Design tokens**
+- [x] **T7.1 Design tokens**
   - *Context:* the design style must be one consistent system, not per-screen improvisation.
   - *Deliverable:* `src/ui/theme.ts`.
   - *Rubber-duck check:* cross-check tokens against `CLAUDE.md`'s design section line-by-line (paper tone, single ink color, one accent reserved for warnings).
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `colors` (paper/ink/inkMuted/accent), `fonts` (`display`/`displaySemiBold` = real bundled handwriting font, `body` left `undefined` deliberately for platform-default sans-serif), `radii` (`sketch` for cards/big buttons, `sketchTight` for pill-style controls — both asymmetric per-corner), `strokes` (`normal`/`emphasized`), `spacing`. The handwriting requirement isn't faked: installed `@expo-google-fonts/caveat` + `expo-font` (both real npm packages, network access confirmed available this session) and load `Caveat_600SemiBold`/`Caveat_700Bold` via `useFonts()` in `app/_layout.tsx`, gating render on load. Also retrofitted `camera.tsx`/`settings.tsx`/`processing.tsx` (built in T5.2/T5.3/T6.3 before this file existed, with duplicated ad hoc hex/radius values) to import from `theme.ts` instead — same values, now one source of truth, and headings now render in the real handwriting font instead of a bold-system-font placeholder.
+  - *Completion summary:* Cross-checked line-by-line against `CLAUDE.md`'s design section: "off-white/paper tone, not pure white" ✓ (`#f6f1e6`), "single dark neutral... used consistently" ✓ (`colors.ink`, one value, no palette), "one accent color reserved exclusively for allergen/warning cells" ✓ (`colors.accent`, a single token with that stated purpose in its comment), "handwritten or marker-style display face" ✓ (real bundled Caveat font, not a stand-in), "clean, highly legible sans-serif" for body/data ✓ (`fonts.body: undefined` documented as "let platform default apply"), asymmetric hand-redrawn corners ✓ (`radii.sketch`/`sketchTight`, no two corners share a radius). The "occasional double-stroke on emphasized cells" requirement is explicitly *not* a token (documented in-code as a nested-border component technique for T7.2, not fakeable as a single style value). Verified live: `document.fonts` in the Browser preview shows `Caveat_700Bold` with `status: "loaded"` (not just a CSS property pointing at a missing font), and Settings/Camera render with zero console errors in a fresh tab. `tsc --noEmit`, `expo lint`, and `npm test` (47/47) all clean.
 
 - [ ] **T7.2 BentoGrid/SketchCard primitives**
   - *Context:* reused on every screen; getting irregular-border/bento-cell behavior right once avoids re-deriving it per screen.

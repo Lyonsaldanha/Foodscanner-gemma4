@@ -3,14 +3,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Link, useRouter } from "expo-router";
 import { useCaptureState } from "../src/capture/useCaptureState";
+import { colors, fonts, radii, strokes } from "../src/ui/theme";
 
-// Ad hoc ink/paper/sketch palette (CLAUDE.md's "Conceptual Sketch Bento Box"
-// style) — not yet the formal src/ui/theme.ts (that lands with the Result
-// screen work, T7.1), but camera/processing chrome should already read as
-// notebook-ish, not a stock glossy camera UI.
-const INK = "#2b2a25";
-const PAPER = "#f6f1e6";
-const ACCENT = "#b3452b";
+const INK = colors.ink;
+const PAPER = colors.paper;
+const ACCENT = colors.accent;
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -151,9 +148,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   heading: {
-    fontSize: 22,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontFamily: fonts.display,
+    fontSize: 34,
     color: INK,
   },
   bodyText: {
@@ -162,12 +158,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sketchButton: {
-    borderWidth: 2,
+    borderWidth: strokes.normal,
     borderColor: INK,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 18,
-    borderBottomLeftRadius: 8,
+    ...radii.sketch,
     paddingVertical: 12,
     paddingHorizontal: 24,
     backgroundColor: PAPER,
@@ -187,12 +180,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   toggleButton: {
-    borderWidth: 2,
+    borderWidth: strokes.normal,
     borderColor: PAPER,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 9,
-    borderBottomRightRadius: 15,
-    borderBottomLeftRadius: 8,
+    ...radii.sketchTight,
     paddingVertical: 8,
     paddingHorizontal: 14,
     backgroundColor: "rgba(43,42,37,0.55)",
@@ -250,12 +240,9 @@ const styles = StyleSheet.create({
     backgroundColor: PAPER,
   },
   analyzeButton: {
-    borderWidth: 2,
+    borderWidth: strokes.normal,
     borderColor: PAPER,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 9,
-    borderBottomRightRadius: 15,
-    borderBottomLeftRadius: 8,
+    ...radii.sketchTight,
     paddingVertical: 10,
     paddingHorizontal: 16,
     backgroundColor: ACCENT,

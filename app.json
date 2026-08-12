@@ -34,7 +34,8 @@
           "cameraPermission": "Ingredient Lens uses the camera to scan ingredient and nutrition labels."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font"
     ]
   }
 }

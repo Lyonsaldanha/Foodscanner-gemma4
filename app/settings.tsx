@@ -2,10 +2,11 @@ import { useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 import { Link } from "expo-router";
 import type { CaptureSettings } from "../src/types/capture";
+import { colors, fonts, radii, strokes } from "../src/ui/theme";
 
-const INK = "#2b2a25";
-const PAPER = "#f6f1e6";
-const ACCENT = "#b3452b";
+const INK = colors.ink;
+const PAPER = colors.paper;
+const ACCENT = colors.accent;
 
 export default function SettingsScreen() {
   // Local-only for now — no settings persistence layer exists yet (only
@@ -61,18 +62,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   heading: {
-    fontSize: 22,
-    fontWeight: "700",
-    letterSpacing: 1,
+    fontFamily: fonts.display,
+    fontSize: 34,
     color: INK,
   },
   sketchCard: {
-    borderWidth: 2,
+    borderWidth: strokes.normal,
     borderColor: INK,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 18,
-    borderBottomLeftRadius: 8,
+    ...radii.sketch,
     padding: 16,
     backgroundColor: PAPER,
   },
