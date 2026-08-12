@@ -44,6 +44,9 @@ function BalanceCell({ balance }: { balance: BalanceVerdict }) {
           ))}
         </View>
       ) : null}
+      <Text style={styles.disclaimerText}>
+        Not medical advice — a rule-of-thumb from UK FSA per-100g guidelines, not a diagnosis.
+      </Text>
     </SketchCard>
   );
 }
@@ -212,5 +215,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: INK,
     opacity: 0.85,
+  },
+  // Deliberately visible in the BALANCE cell's default (unscrolled) view,
+  // not tucked behind a tap/modal — the whole point is that the verdict
+  // above it reads as a heuristic, not a diagnosis, on first glance.
+  disclaimerText: {
+    marginTop: spacing.sm,
+    fontSize: 11,
+    color: colors.inkMuted,
+    fontStyle: "italic",
   },
 });
