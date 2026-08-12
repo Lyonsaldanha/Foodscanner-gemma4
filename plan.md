@@ -329,3 +329,44 @@ Each task below is independently completable and independently verifiable. Every
     - **`python/test_harness.py` actually running** — confirmed syntactically valid and importable (`py_compile`, `import prompts`) and confirmed to fail gracefully without `litert-lm-api` installed, but it has never executed a real `litert_lm.Engine` session, because that package, the `.litertlm` model file, and real product photos are all absent here.
     - **The spec's 20+-real-photo validation gate** (section 10's Development Rule) — `python/fixtures/` is empty; the gate is implemented and enforced *in code* (`MIN_IMAGES_PER_PROMPT = 20` in `test_harness.py`) but has never been exercised against a single real photo, let alone 20.
     - **The Browser preview's screenshot capability itself** — a tooling gap in this session's environment, separate from the app; worth flagging to whoever picks this up next in case it's fixable, since DOM-based verification is a reasonable substitute but not a full replacement for actually looking at the rendered pixels (font rendering, spacing/alignment issues invisible to `getBoundingClientRect`, color contrast).
+
+### Phase 12 — Real device integration
+
+> The MVP (Phases 0–11) is complete and fully mock-verified. This phase is "Part A" of running the app on a real phone: everything buildable without hardware, so the codebase is 100% ready to run for real the moment a device is available. "Part B" (native build, real device, real model download, real photos, the Python harness actually running) is out of scope for this repo's Claude-executable work — see the user-approved plan at the time this phase started for the full split and hand-off steps.
+
+- [x] **T12.1 Install react-native-litert-lm + config**
+  - *Context:* the real `ModelClient` (ADR 1's marked gap) needs the actual package installed and Expo configured for it before any code can be written against real types instead of guessing from docs.
+  - *Deliverable:* `react-native-nitro-modules` + `react-native-litert-lm` installed; `app.json` gets the `react-native-litert-lm` plugin and `android.minSdkVersion: 26`.
+  - *Rubber-duck check:* `npx expo config --type public` resolves cleanly with the new plugin listed, and the existing test suite is unaffected.
+  - *Result:* Both packages installed via `npx expo install`/`npm install`. Before writing any code against the package, verified its *actual installed* type declarations (`node_modules/react-native-litert-lm/lib/**/*.d.ts`) rather than trusting the web-search summary that informed the initial plan — this surfaced a real correction: `loadModel(pathOrUrl, config?, onDownloadProgress?)` already exposes a plain download-progress callback, so the planned `ModelProvider`/React-hook-bridging step (originally needed to get live progress) turned out to be unnecessary. The plain imperative API (`createLLM`/`loadModel`/`execute`/`resetConversation`) fully satisfies `ModelClient` on its own.
+  - *Completion summary:* Done. `npx expo config --type public` resolves the full config with `react-native-litert-lm` in the plugins array and no errors (also surfaced that the plugin auto-adds `android.permission.RECORD_AUDIO`, expected given the package's audio-input support). `tsc --noEmit`, `expo lint`, `npm test` (52/52) all unaffected — nothing imports the new package yet at this point.
+
+- [x] **T12.2 Real ModelClient implementation**
+  - *Context:* this is the one file ADR 1 says a future session needs to write — the actual bridge from our `ModelClient` interface to the real inference engine.
+  - *Deliverable:* `src/model/engine.ts`.
+  - *Rubber-duck check:* every `ModelClient` method has a real, type-checked mapping to a real package API (not a guess), and the systemPrompt-per-call vs. session-level-systemPrompt mismatch is explicitly handled, not ignored.
+  - *Result:* `getLoadState()` returns module-level state updated by `loadModel`'s progress callback (mapped to `downloading`/`loading`/`ready`/`error`). `ensureReady()` calls `createLLM()` once then `loadModel(GEMMA_4_E2B_IT, {backend, multimodal:true}, onProgress)`, memoized so concurrent callers await the same in-flight promise rather than double-loading a 2.58GB model. `generate({systemPrompt, userPrompt, image})` calls `llm.resetConversation(undefined, systemPrompt)` (the documented, cheap way to switch the session-level system prompt without reloading weights) immediately followed by `llm.execute([{type:"text",...}, {type:"image", path: image.uri}])` — `execute()` is the package's "recommended unified entry point" per its own JSDoc, and `image.uri` (from T6.1's `preprocessImage`) is already the local file path the `path` field wants, no new plumbing. `MemoryError` (thrown by `loadModel` when a pre-flight estimate says the model won't fit) is caught via the package's own `isMemoryError()` type guard and surfaced as a `ModelLoadState.error` with the estimate's `verdict`/`recommendation`, not an uncaught crash.
+  - *Completion summary:* Done. `tsc --noEmit` passes against the real installed package types (not stubs) and `expo lint` is clean. **Cannot be run** — no native build, no device, no model file in this sandbox; this is written-and-typechecked-only, explicitly not "tested to work." `engine.test.ts` (next task) covers what's actually verifiable here: the mapping logic, mocked.
+
+### Phase 12 remaining (not yet done)
+
+- [ ] **T12.3 Swap processing.tsx to the real client behind a flag**
+  - *Context:* the mock must stay available for continued web-preview iteration and the existing test suite; the swap should be one flag, not a code fork.
+  - *Deliverable:* `app/processing.tsx` picks `realModelClient` vs `createMockModelClientForFixture(...)` based on an env flag (e.g. `EXPO_PUBLIC_USE_MOCK_MODEL`, defaulting to mock so nothing currently working regresses).
+  - *Rubber-duck check:* web preview still runs the mock path unchanged (re-verify the shortbread fixture flow from T11.1 still works); flipping the flag is the only change needed to attempt the real path on a native build.
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T12.4 engine.test.ts**
+  - *Context:* the mapping logic in `engine.ts` (progress→state transitions, systemPrompt reset-before-execute, MemoryError handling) is real code with real bugs possible, and none of it needs a device to test if `react-native-litert-lm` itself is mocked.
+  - *Deliverable:* `src/model/engine.test.ts`, mocking `react-native-litert-lm` the same way `preprocess.test.ts` mocks `expo-image-manipulator`.
+  - *Rubber-duck check:* tests actually exercise the three things called out in T12.2's Result — progress-to-state mapping, the resetConversation-before-execute call sequence, and MemoryError surfacing as a load error — not just "it doesn't throw."
+  - *Result:*
+  - *Completion summary:*
+
+- [ ] **T12.5 Update docs for Part A completion**
+  - *Context:* `architecture.md`'s "what's not built" list and ADR 1's "Consequence" note are now partly stale once T12.1–T12.4 land.
+  - *Deliverable:* `architecture.md` updated (real `ModelClient` moves from "not built" to "built, never run on real hardware"); this file's Phase 12 intro updated if scope changed during execution.
+  - *Rubber-duck check:* a reader of `architecture.md` alone (no memory of this session) can tell exactly what's real vs. mocked vs. untested, with no overclaiming.
+  - *Result:*
+  - *Completion summary:*
