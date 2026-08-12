@@ -131,12 +131,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 1 — Types
 
-- [ ] **T1.1 Core schema types**
+- [x] **T1.1 Core schema types**
   - *Context:* the sharpened schema (decoded ingredients w/ `source`, per-100g nutrition, rule-based verdict) is the contract every other module codes against — get it right once.
   - *Deliverable:* `src/types/scan.ts`, `src/types/capture.ts`.
   - *Rubber-duck check:* walk each confirmed decision (capture flow, glossary+model-fallback, deterministic verdict) and confirm every field needed to represent it exists, with no orphan/unused fields.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `src/types/scan.ts` transcribes the plan's schema verbatim (`DecodedIngredient` w/ `source: "glossary" | "model" | null`, `NutritionPer100g`, `BalanceVerdict`, `ScanResult`), plus small named helper types (`Micronutrient`, `DietaryFlags`, `NutrientAdequacyFlag`) that were anonymous inline shapes in the plan — named for reuse without changing meaning. `src/types/capture.ts` adds `CaptureTarget`, `CapturedPhoto`, `CaptureSlots` (a `Record<CaptureTarget, CapturedPhoto | null>`), `CaptureState` (`activeTarget` + `slots`), and `CaptureSettings` (`autoSinglePhotoMode: boolean`).
+  - *Completion summary:* Done. Walked all 4 capture paths (ingredients-only/nutrition-only/both/neither) — each is representable as a `CaptureSlots` value with the "neither" case (Analyze blocked) derivable from both slots being `null`, no dedicated field needed. Walked glossary+model-fallback — `source: IngredientSource | null` and `isHiddenName` cover it. Walked deterministic verdict — `BalanceVerdict.flags`/`rulesTriggered`/`overall` cover it. No orphan fields found. `tsc --noEmit` and `expo lint` both clean.
 
 ### Phase 2 — Glossary module
 
