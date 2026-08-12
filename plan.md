@@ -299,12 +299,12 @@ Each task below is independently completable and independently verifiable. Every
 
 ### Phase 10 — Docs
 
-- [ ] **T10.1 architecture.md**
+- [x] **T10.1 architecture.md**
   - *Context:* the three confirmed ADRs (capture flow, glossary+fallback, deterministic verdict + threshold sourcing) need a durable written record separate from `CLAUDE.md`'s guidance role, or they get re-litigated later.
   - *Deliverable:* `architecture.md` populated with module boundary + ADRs + `ScanResult` reference.
   - *Rubber-duck check:* does it capture the *why* for each ADR, not just the *what* (which already lives in code)?
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* Rewrote `architecture.md` end to end — it previously described the *original generic spec's* assumptions (pre-`plan.md`, snake_case JSON shape, 4-step parser with a re-query rung, `{"products":[...]}` multi-product array), all since superseded/deviated-from by decisions this plan.md documents; it hadn't been touched since early scaffolding and had drifted stale relative to what actually got built. New structure: "What this app is", real stack table (flagging `react-native-litert-lm` as **not yet built**), the actual project file tree (not the old planned one), a "What's not built this pass" section (real `ModelClient`, History screen, onboarding, true mid-flight cancel, the removed `dietaryFlags`), 3 ADRs (`ModelClient`-as-interface, glossary-first-model-fallback, deterministic-verdict-model-does-OCR-only) each with Decision/Why/Consequence, the real `ScanResult` shape, the real 3-rung parser chain (explicitly noting the dropped 4th "re-query" rung and why), and an updated Development-workflow section pointing at the now-real `python/` harness.
+  - *Completion summary:* Done. Every ADR follows Decision → Why → Consequence, and the Why lines cite the actual pressure that produced the decision (the 15–28s wait, "no device exists here", "opaque LLM output isn't trustworthy for a health-adjacent verdict") rather than restating what the code already shows. Cross-checked the file tree and "what's not built" list against the real repo contents (`find src app python -type f`) rather than writing from memory, so it doesn't quietly go stale the way the previous version did. No test suite impact (docs-only); `tsc --noEmit`/`expo lint`/`npm test` unaffected (52/52).
 
 - [ ] **T10.2 CLAUDE.md update**
   - *Context:* it currently says "no commands yet," which becomes false the moment T0.1–T0.2 land.
