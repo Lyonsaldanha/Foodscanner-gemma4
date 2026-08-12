@@ -108,26 +108,26 @@ Each task below is independently completable and independently verifiable. Every
   - *Result:* Created `plan.md` at repo root with full Context/Architecture/atomic-task-list. Added a "Build plan" section to `CLAUDE.md` (before "Project state") linking to it and explaining the Context/Deliverable/Rubber-duck-check/Result/Completion-summary fields and the update rule.
   - *Completion summary:* Done. Re-reading only the new `CLAUDE.md` section (no other context) is enough to know `plan.md` exists, what it's for, and that finishing a task means editing its fields in-place — check passes.
 
-- [ ] **T0.1 Expo+TS scaffold**
+- [x] **T0.1 Expo+TS scaffold**
   - *Context:* no RN project exists; expo-router matches the spec's file-based screen layout (`app/camera.tsx` etc.) directly.
-  - *Deliverable:* `package.json`, `tsconfig.json` (strict), `babel.config.js`, `app.json`, expo-router entry + placeholder route.
+  - *Deliverable:* `package.json`, `tsconfig.json` (strict), `app.json`, expo-router entry (`app/_layout.tsx`) + placeholder route (`app/index.tsx`).
   - *Rubber-duck check:* `tsc --noEmit` runs clean on the empty skeleton; the placeholder route actually renders.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* Scaffolded via `create-expo-app` (blank-typescript template) into a temp dir, then merged into the repo (package.json/app.json/tsconfig/assets), converted to expo-router (`main: "expo-router/entry"`, removed the template's `App.tsx`/`index.ts`, added `app/_layout.tsx` + `app/index.tsx`). No `babel.config.js` needed — SDK 57 resolves `babel-preset-expo` without one. Verified live via `npx expo start --web` in the Browser preview: tab title and page text render "Ingredient Lens" / the placeholder copy, zero console errors.
+  - *Completion summary:* Done — `tsc --noEmit` is clean and the route renders in a live web preview, not just "it built." Both rubber-duck checks pass.
 
-- [ ] **T0.2 Lint/test tooling**
+- [x] **T0.2 Lint/test tooling**
   - *Context:* "engineered, not vibe-coded" means typecheck/lint/test are enforced from the first commit, not bolted on later.
   - *Deliverable:* ESLint config, `jest`+`jest-expo`+`@testing-library/react-native`, `lint`/`typecheck`/`test`/`start` npm scripts.
   - *Rubber-duck check:* all four scripts run without config errors (even against near-empty source).
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* `npx expo lint` scaffolded `eslint.config.js` (flat config, `eslint-config-expo`). Added `jest`/`jest-expo`/`@testing-library/react-native`, a `"jest": {"preset": "jest-expo"}` block in `package.json`, and `typecheck`/`test` scripts. `test` uses `--passWithNoTests` since no test files exist yet (T2.2/T3.2/T4.4 add the first real ones) — that's an expected, not masked, state.
+  - *Completion summary:* Done. Ran all four scripts for real: `npm run typecheck` (clean), `npm run lint` (clean), `npm test` (`No tests found, exiting with code 0`), `start`/`web` already proven live in T0.1. No config errors on any of them.
 
-- [ ] **T0.3 Dependencies + .gitignore**
+- [x] **T0.3 Dependencies + .gitignore**
   - *Context:* `zod` is needed later for real schema validation of model output (not just trusting `JSON.parse`); model files (~2.59GB) must never be committed.
-  - *Deliverable:* deps installed (`expo-router`, `expo-camera`, `expo-sqlite`, `expo-image-manipulator`, `zod`), `.gitignore` updated (`node_modules`, `.expo`, `dist`, `*.litertlm`).
+  - *Deliverable:* deps installed (`expo-router`, `react-native-safe-area-context`, `react-native-screens`, `expo-linking`, `expo-constants`, `react-dom`+`react-native-web`+`@expo/metro-runtime` for web preview, `expo-camera`, `expo-sqlite`, `expo-image-manipulator`, `zod`), `.gitignore` updated (`node_modules`, `.expo`, `dist`, `*.tsbuildinfo`, `*.litertlm`, native `/ios` `/android`).
   - *Rubber-duck check:* `git status` shows none of those paths tracked.
-  - *Result:*
-  - *Completion summary:*
+  - *Result:* All deps installed via `npx expo install` (SDK-compatible versions) + plain `npm install zod`. `app.json` now declares `expo-router`, `expo-camera` (with a camera-usage-string plugin config), and `expo-sqlite` plugins, plus Android `CAMERA` permission. `.gitignore` extended with the full Expo/RN ignore set and `*.litertlm`.
+  - *Completion summary:* Done. `git status` (checked below in T0.1's verification pass) shows `node_modules/` untracked as expected; no `.litertlm` files exist yet to verify against, but the pattern is in place.
 
 ### Phase 1 — Types
 
