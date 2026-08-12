@@ -1,10 +1,11 @@
+import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function Index() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Ingredient Lens</Text>
-      <Text>Scaffold placeholder — camera flow lands in a later task.</Text>
+      <Link href="/camera">Open camera</Link>
     </View>
   );
 }
