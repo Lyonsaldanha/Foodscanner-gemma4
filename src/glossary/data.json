@@ -1,0 +1,198 @@
+[
+  {
+    "id": "maida",
+    "aliases": ["maida", "maida flour", "refined flour", "refined wheat flour", "white flour"],
+    "plainMeaning": "Highly refined wheat flour with the bran and germ milled out — low in fiber and micronutrients, with a higher glycemic impact than whole wheat.",
+    "category": "refined_flour",
+    "healthNote": "Common base of Indian bakery/snack products (biscuits, naan, samosa pastry); fine for occasional use but offers little nutritional value compared to whole-grain flour."
+  },
+  {
+    "id": "invert-sugar-syrup",
+    "aliases": ["invert sugar syrup", "invert sugar", "inverted sugar syrup"],
+    "plainMeaning": "A liquid sugar made by splitting sucrose into glucose and fructose — sweeter and more moisture-retentive than table sugar.",
+    "category": "added_sugar",
+    "healthNote": "Nutritionally equivalent to added sugar; used in bakery/confectionery to keep products soft and extend shelf life."
+  },
+  {
+    "id": "maltodextrin",
+    "aliases": ["maltodextrin", "maltodextrine"],
+    "plainMeaning": "A starch-derived carbohydrate powder, usually from corn, rice, or potato, used as a filler, thickener, or quick-energy carb.",
+    "category": "added_sugar",
+    "healthNote": "Digests almost as fast as pure glucose despite not tasting sweet — can spike blood sugar; common in processed snacks and sports drinks."
+  },
+  {
+    "id": "hfcs",
+    "aliases": ["high fructose corn syrup", "hfcs", "glucose-fructose syrup", "glucose fructose syrup", "corn syrup"],
+    "plainMeaning": "A sweetener made by processing corn starch into a syrup of glucose and fructose.",
+    "category": "added_sugar",
+    "healthNote": "Functions in the body like other added sugars; frequently used in sodas, sauces, and packaged desserts for cost and shelf-stability."
+  },
+  {
+    "id": "hydrogenated-vegetable-oil",
+    "aliases": ["hydrogenated vegetable oil", "vanaspati", "partially hydrogenated oil", "hydrogenated oil", "vegetable shortening"],
+    "plainMeaning": "Vegetable oil chemically hardened by adding hydrogen, turning liquid oil into a solid/semi-solid fat.",
+    "category": "trans_fat_source",
+    "healthNote": "Partial hydrogenation can produce trans fats, linked to cardiovascular risk; India (FSSAI) caps industrial trans fat at 2% of total fat in food (2022 rules), but check the label's trans-fat line."
+  },
+  {
+    "id": "palm-oil",
+    "aliases": ["palm oil", "palmolein", "palm olein", "edible vegetable oil (palm)"],
+    "plainMeaning": "An oil pressed from the fruit of the oil palm, high in saturated fat and semi-solid at room temperature.",
+    "category": "natural",
+    "healthNote": "Not a trans fat source, but high in saturated fat; widely used in packaged snacks for its low cost and long shelf life."
+  },
+  {
+    "id": "sodium-benzoate",
+    "aliases": ["sodium benzoate", "e211", "e-211"],
+    "plainMeaning": "A synthetic preservative that stops mould, yeast, and some bacteria from growing in acidic foods and drinks.",
+    "category": "preservative",
+    "healthNote": "Approved within FSSAI limits; can form small amounts of benzene when combined with vitamin C under heat/light, though regulated levels are considered safe."
+  },
+  {
+    "id": "potassium-sorbate",
+    "aliases": ["potassium sorbate", "e202", "e-202"],
+    "plainMeaning": "A synthetic preservative that inhibits mould and yeast growth, commonly used in place of sodium benzoate.",
+    "category": "preservative",
+    "healthNote": "Generally regarded as one of the milder preservatives; approved within FSSAI limits."
+  },
+  {
+    "id": "msg",
+    "aliases": ["monosodium glutamate", "msg", "e621", "e-621", "ajinomoto"],
+    "plainMeaning": "The sodium salt of glutamic acid, an amino acid — added purely to intensify savoury (umami) taste.",
+    "category": "flavour_enhancer",
+    "healthNote": "Considered safe by FSSAI/international food-safety bodies at normal intake levels, despite popular concern; adds no nutritional value."
+  },
+  {
+    "id": "sodium-metabisulphite",
+    "aliases": ["sodium metabisulphite", "sodium metabisulfite", "e223", "e-223"],
+    "plainMeaning": "A sulphite preservative that prevents browning and inhibits microbial growth, often in dried fruit or packaged juices.",
+    "category": "preservative",
+    "healthNote": "Can trigger reactions in people with sulphite sensitivity or asthma; must be declared as an allergen-relevant additive."
+  },
+  {
+    "id": "tbhq",
+    "aliases": ["tertiary butylhydroquinone", "tbhq", "e319", "e-319"],
+    "plainMeaning": "A synthetic antioxidant added to oils and fried snacks to stop fats from turning rancid.",
+    "category": "preservative",
+    "healthNote": "Approved within strict FSSAI limits; used in small quantities specifically to extend shelf life of fried/oily packaged foods."
+  },
+  {
+    "id": "sodium-nitrite",
+    "aliases": ["sodium nitrite", "e250", "e-250"],
+    "plainMeaning": "A curing salt used in processed/packaged meats to fix colour and block bacterial growth (notably botulism).",
+    "category": "preservative",
+    "healthNote": "Can react with proteins during high-heat cooking to form nitrosamines, which health bodies advise limiting; mainly relevant to cured/processed meat products."
+  },
+  {
+    "id": "aspartame",
+    "aliases": ["aspartame", "e951", "e-951"],
+    "plainMeaning": "A synthetic, very low-calorie artificial sweetener roughly 200x sweeter than sugar.",
+    "category": "artificial_sweetener",
+    "healthNote": "Approved within FSSAI limits; not suitable for people with the rare genetic condition phenylketonuria (PKU), as it contains phenylalanine."
+  },
+  {
+    "id": "sucralose",
+    "aliases": ["sucralose", "e955", "e-955"],
+    "plainMeaning": "A synthetic, zero-calorie artificial sweetener made from sugar, roughly 600x sweeter than sugar.",
+    "category": "artificial_sweetener",
+    "healthNote": "Passes through the body largely unabsorbed; approved within FSSAI limits for 'diet'/low-sugar products."
+  },
+  {
+    "id": "acesulfame-potassium",
+    "aliases": ["acesulfame potassium", "acesulfame k", "ace-k", "e950", "e-950"],
+    "plainMeaning": "A synthetic, zero-calorie artificial sweetener often blended with other sweeteners to round out taste.",
+    "category": "artificial_sweetener",
+    "healthNote": "Approved within FSSAI limits; commonly paired with sucralose or aspartame in 'diet' beverages."
+  },
+  {
+    "id": "mono-diglycerides",
+    "aliases": ["mono- and diglycerides", "mono and diglycerides of fatty acids", "e471", "e-471", "monoglycerides", "diglycerides"],
+    "plainMeaning": "Emulsifiers made from fats that help oil and water mix evenly, keeping baked goods soft and batters smooth.",
+    "category": "emulsifier",
+    "healthNote": "Very widely used and generally considered safe; can occasionally be derived from animal fat, relevant to strict vegetarians unless labelled plant-sourced."
+  },
+  {
+    "id": "lecithin",
+    "aliases": ["lecithin", "soy lecithin", "sunflower lecithin", "e322", "e-322"],
+    "plainMeaning": "A natural emulsifier (often from soy or sunflower) that keeps fat and water blended, e.g. in chocolate or bakery products.",
+    "category": "emulsifier",
+    "healthNote": "Generally well tolerated; relevant as a soy-allergen flag if soy-derived and not otherwise disclosed."
+  },
+  {
+    "id": "carrageenan",
+    "aliases": ["carrageenan", "e407", "e-407"],
+    "plainMeaning": "A thickener/stabilizer extracted from red seaweed, used to give dairy and dairy-alternative products body.",
+    "category": "stabilizer_thickener",
+    "healthNote": "Approved food-grade additive; distinct from 'poligeenan' (a degraded form studied for gut irritation) which is not permitted in food."
+  },
+  {
+    "id": "xanthan-gum",
+    "aliases": ["xanthan gum", "e415", "e-415"],
+    "plainMeaning": "A fermentation-derived thickener that gives sauces, dressings, and gluten-free baked goods a stable texture.",
+    "category": "stabilizer_thickener",
+    "healthNote": "Widely regarded as safe; adds negligible calories and no nutritional concern at typical use levels."
+  },
+  {
+    "id": "tartrazine",
+    "aliases": ["tartrazine", "e102", "e-102", "yellow 5", "fd&c yellow no. 5"],
+    "plainMeaning": "A synthetic yellow food dye used purely for colour, with no flavour or nutritional function.",
+    "category": "artificial_colour",
+    "healthNote": "Some studies link azo dyes like tartrazine to hyperactivity in sensitive children; FSSAI permits it within set limits and it must be declared on-label."
+  },
+  {
+    "id": "sunset-yellow",
+    "aliases": ["sunset yellow", "sunset yellow fcf", "e110", "e-110", "yellow 6"],
+    "plainMeaning": "A synthetic orange-yellow food dye used purely for colour.",
+    "category": "artificial_colour",
+    "healthNote": "Another azo dye flagged in some hyperactivity studies; permitted by FSSAI within set limits."
+  },
+  {
+    "id": "erythrosine",
+    "aliases": ["erythrosine", "e127", "e-127", "red 3", "fd&c red no. 3"],
+    "plainMeaning": "A synthetic red/pink food dye used purely for colour, common in glace cherries and some confectionery.",
+    "category": "artificial_colour",
+    "healthNote": "Permitted by FSSAI within set limits; some regulators have restricted its use pending safety review."
+  },
+  {
+    "id": "corn-syrup-solids",
+    "aliases": ["corn syrup solids", "dried glucose syrup"],
+    "plainMeaning": "Corn syrup with the water removed to form a powder — still functions as an added sugar.",
+    "category": "added_sugar",
+    "healthNote": "Nutritionally behaves like added sugar despite the less obviously 'sugary' name; common in powdered mixes and creamers."
+  },
+  {
+    "id": "dextrose",
+    "aliases": ["dextrose", "glucose", "corn sugar"],
+    "plainMeaning": "Pure glucose sugar, chemically identical to the glucose in your bloodstream — the fastest-absorbed common sugar.",
+    "category": "added_sugar",
+    "healthNote": "Causes a rapid blood-sugar rise; used in packaged foods for sweetness, browning, or as a cheap bulking agent."
+  },
+  {
+    "id": "hydrolyzed-vegetable-protein",
+    "aliases": ["hydrolyzed vegetable protein", "hvp", "hydrolysed vegetable protein"],
+    "plainMeaning": "Plant protein broken down chemically into amino acids, used as a savoury flavour booster similar in effect to MSG.",
+    "category": "flavour_enhancer",
+    "healthNote": "Naturally high in free glutamate, so it acts like an MSG substitute; the source crop (often soy or wheat) matters for allergen labelling."
+  },
+  {
+    "id": "ammonium-bicarbonate",
+    "aliases": ["ammonium bicarbonate", "baker's ammonia", "e503", "e-503"],
+    "plainMeaning": "A leavening agent that releases gas when heated, used in flat, crisp baked goods like some biscuits and crackers.",
+    "category": "natural",
+    "healthNote": "Fully decomposes and bakes off during cooking, leaving no residue of concern; long-standing traditional raising agent."
+  },
+  {
+    "id": "calcium-propionate",
+    "aliases": ["calcium propionate", "e282", "e-282"],
+    "plainMeaning": "A mould-inhibiting preservative commonly used in packaged bread.",
+    "category": "preservative",
+    "healthNote": "Approved within FSSAI limits; occasionally associated with headaches or irritability in sensitive individuals, though evidence is limited."
+  },
+  {
+    "id": "bha",
+    "aliases": ["butylated hydroxyanisole", "bha", "e320", "e-320"],
+    "plainMeaning": "A synthetic antioxidant added to fats and oils to prevent them from going rancid and to extend shelf life.",
+    "category": "preservative",
+    "healthNote": "Permitted within FSSAI limits; some international bodies classify it as a possible carcinogen at high doses, prompting several brands to phase it out."
+  }
+]
