@@ -20,9 +20,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA"
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
-      "minSdkVersion": 26
+      "minSdkVersion": 26,
+      "package": "com.anonymous.ingredientlens"
     },
     "web": {
       "favicon": "./assets/favicon.png"

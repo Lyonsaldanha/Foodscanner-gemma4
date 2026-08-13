@@ -1,5 +1,4 @@
-import { createLLM, GEMMA_4_E2B_IT, checkBackendSupport, getRecommendedBackend, isMemoryError } from "react-native-litert-lm";
-import type { Backend } from "react-native-litert-lm";
+import { createLLM, GEMMA_4_E2B_IT, isMemoryError } from "react-native-litert-lm";
 import type { ModelClient, ModelGenerateOptions, ModelLoadState } from "./types";
 import { raceWithAbort } from "./abortable";
 
@@ -27,13 +26,6 @@ let llm: ReturnType<typeof createLLM> | null = null;
 let loadState: ModelLoadState = { status: "not_downloaded" };
 let loadPromise: Promise<void> | null = null;
 
-function pickBackend(): Backend {
-  // checkBackendSupport returns a warning string if the config may have
-  // issues, undefined if OK. getRecommendedBackend() is the package's own
-  // safe-default fallback ('cpu').
-  return checkBackendSupport("gpu") ? getRecommendedBackend() : "gpu";
-}
-
 function ensureModelLoaded(): Promise<void> {
   if (llm && loadState.status === "ready") return Promise.resolve();
   if (loadPromise) return loadPromise;
@@ -44,7 +36,45 @@ function ensureModelLoaded(): Promise<void> {
   loadPromise = llm
     .loadModel(
       GEMMA_4_E2B_IT,
-      { backend: pickBackend(), multimodal: true },
+      {
+        // Switched back to 'gpu' from 'cpu': once forceLoad (below) bypasses
+        // the memory pre-flight check entirely, cpu's smaller memory
+        // estimate no longer buys anything, and forcing cpu turned out to
+        // have a real cost — the package's own LLMConfig.backend doc says
+        // "Vision encoder is always set to GPU (required by Gemma models)"
+        // regardless of the primary backend. The first real multimodal
+        // execute() call (text+image, the only kind this app ever makes)
+        // failed native-side with "Failed to invoke the compiled model"
+        // right after switching to cpu — consistent with a primary-backend
+        // vs vision-encoder mismatch, though not proven with certainty
+        // (no lower-level log detail was available, only the JS-surfaced
+        // exception). If this doesn't clear it, that theory was wrong.
+        backend: "gpu",
+        multimodal: true,
+        // Default is 4096, sized for multi-turn chat. Every call this app
+        // makes is one-shot (ingredients OR nutrition prompt -> one JSON
+        // response, no conversation history — see generate()'s
+        // resetConversation-before-every-call comment below), so the KV
+        // cache doesn't need that much budget. 2048 is a reasoned cut, not
+        // one measured against real prompt/output token counts (no device
+        // existed to measure against until this session) — if real prompts
+        // ever get close to it, this is the first knob to revisit. Cut
+        // further to 1024 alongside forceLoad below — worth ~30MB more
+        // (see the KV-cache math in T14.2's plan.md entry), which is real
+        // but small; it is not what's actually causing crashes once
+        // forceLoad is on (see that comment for the real cause).
+        maxContextTokens: 1024,
+        // TEMPORARY (T14.2 tactical fix, not a real solution): the pre-flight
+        // estimate is documented as deliberately conservative, and on a
+        // 5.5GB-RAM device it still rejected a load that was only ~458MB
+        // over budget after the cpu/maxContextTokens fixes above. forceLoad
+        // skips that JS-side safety check and attempts the real load anyway
+        // — trading a clean, safe error for a real (if conservative-estimate
+        // suggests unlikely) chance of an OS-level kill instead. Revisit via
+        // the OCR-first architecture discussed in plan.md Phase 14 rather
+        // than leaving this flag on long-term.
+        forceLoad: true,
+      },
       (progress) => {
         // The package reports one continuous download-progress stream; a
         // brief unsignaled "parsing into memory" gap between progress
