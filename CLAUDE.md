@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **[plan.md](plan.md)** is the living build plan — start there before doing any implementation work. It uses an atomic-task system: each task carries a *Context* (why it exists), a *Deliverable*, a pre-specified *Rubber-duck check* (how to verify it's actually correct, not just present), and, once done, a *Result* and *Completion summary*. Before starting new work, find the next unchecked task there and read its Context. On completing a task, fill in its Result/Rubber-duck-check-outcome/Completion-summary fields directly in `plan.md` — that's what lets a later session trust "done" without re-deriving it.
 
+## Git workflow
+
+`main` is protected in practice, not just by convention: never commit or push directly to it. All work happens on a feature branch (branch off `main`, name it for the task at hand). When the work is ready, ask the user for explicit approval before merging the branch into `main` (and before pushing `main` or opening/merging a PR) — do not merge on your own judgment even if CI/tests pass. Merging is a separate, later step from finishing the work, not an automatic follow-on.
+
 ## Project state
 
 An Expo + TypeScript app (expo-router, strict TS), with most of the MVP build plan complete — see [plan.md](plan.md) for the full per-task record and [architecture.md](architecture.md) for the module boundary, ADRs, and what's deliberately not built yet (a real on-device model client chief among them — everything is built and tested against a mock, since no real Android device or `.litertlm` weights exist in this dev environment).
